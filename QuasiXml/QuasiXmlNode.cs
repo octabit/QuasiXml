@@ -120,7 +120,7 @@ namespace QuasiXml
             Attributes = new Dictionary<string, string>();
             Children = new QuasiXmlNodeCollection();
             Children.CollectionChanged += this.OnChildrenChanged;
-            ParseSettings = new QuasiXmlParseSettings() { NormalizeAttributeValueWhitespaces = false, AbortOnError = false, AutoCloseOpenTags = false };
+            ParseSettings = new QuasiXmlParseSettings();
             RenderSettings = new QuasiXmlRenderSettings();
         }
 
@@ -198,11 +198,8 @@ namespace QuasiXml
                                     openNodes.RemoveAt(i - 1);
 
                             if (initialNumberOfOpenTags == openNodes.Count)
-                            {
-                                int errorLine = getLineNumber(markup, tagBeginPosition);
-                                throw new QuasiXmlException("Missing open '" + extractName(markup, tagBeginPosition + 1) + "' tag to close." + Environment.NewLine
-                                    + "Source line number: " + errorLine, errorLine);
-                            }
+                                if (ParseSettings.AbortOnError)
+                                    throw new QuasiXmlException("Missing open '" + extractName(markup, tagBeginPosition + 1) + "' tag to close.", getLineNumber(markup, tagBeginPosition));
 
                             if (openNodes.Count > 0)
                                 currentTag = openNodes[openNodes.Count - 1].Item1; //Current tag is the last open tag
@@ -263,20 +260,17 @@ namespace QuasiXml
                     }
 
                     if (lastSearchTagStartPosition == searchTagStartPosition)
-                    {
-
-                        int errorLine = getLineNumber(markup, tagBeginPosition);
-                        throw new QuasiXmlException("Missing end token." + Environment.NewLine
-                            + "Source line number: " + errorLine, errorLine);
-                    }
+                        throw new QuasiXmlException("Missing end token.", getLineNumber(markup, tagBeginPosition));
 
                     lastSearchTagStartPosition = searchTagStartPosition;
                 }
-                catch (Exception)
+                catch (QuasiXmlException e)
                 {
-                    int errorLine = getLineNumber(markup, tagBeginPosition);
-                    throw new QuasiXmlException("Parser error." + Environment.NewLine
-                        + "Source line number: " + errorLine, errorLine);
+                    throw e;
+                }
+                catch (Exception e)
+                {
+                    throw new QuasiXmlException("Parser error.", getLineNumber(markup, tagBeginPosition), e);
                 }
             }
 
@@ -284,9 +278,9 @@ namespace QuasiXml
             {
                 if (ParseSettings.AutoCloseOpenTags == false)
                     throw new QuasiXmlException("Missing end tag.");
-
-                //TODO: auto close
-
+                else
+                    throw new NotImplementedException("Auto closing of open tags not yet supported.");
+                    //TODO: auto close
             }
         }
 

@@ -28,5 +28,19 @@ namespace QuasiXml
         public bool NormalizeAttributeValueWhitespaces { get; set; }
         public bool AutoCloseOpenTags { get; set; }
         public bool AbortOnError { get; set; }
+
+        public QuasiXmlParseSettings()
+        {
+            NormalizeAttributeValueWhitespaces = false;
+            AutoCloseOpenTags = false;
+            AbortOnError = false;
+        }
+
+        public QuasiXmlParseSettings(bool normalizeAttributeValueWhitespaces, bool autoCloseOpenTags, bool abortOnError)
+        {
+            NormalizeAttributeValueWhitespaces = normalizeAttributeValueWhitespaces;
+            AutoCloseOpenTags = autoCloseOpenTags;
+            AbortOnError = abortOnError;
+        }
     }
 }

@@ -209,17 +209,30 @@ namespace QuasiXmlTest
         }
         
         [TestMethod]
-        [ExpectedException(typeof(QuasiXmlException), "Missing open tag to close.")]
-        public void TestParseShouldThrowExeptionMissingOpenTag()
+        [ExpectedException(typeof(QuasiXmlException))]
+        public void TestParseShouldThrowExeptionMissingOpenTagToClose()
         {
             string markup =
-            @"<root>
-                <element attribute=""attributedata"" attribute2=""attributedata2"">
-                </test>
-            </root>";
+            @"<root><one><two></two></two></one></root>";
 
             QuasiXmlNode root = new QuasiXmlNode();
+            root.ParseSettings.AbortOnError = true;
             root.OuterMarkup = markup;
+
+            Assert.IsInstanceOfType(root, typeof(QuasiXmlNode));
+        }
+
+        [TestMethod]
+        public void TestCanRecoverFromExeptionMissingOpenTagToClose()
+        {
+            string markup =
+            @"<root><one><two></two></two></one></root>";
+
+            QuasiXmlNode root = new QuasiXmlNode();
+            root.ParseSettings.AbortOnError = false;
+            root.OuterMarkup = markup;
+
+            Assert.IsInstanceOfType(root, typeof(QuasiXmlNode));
         }
     }
 }

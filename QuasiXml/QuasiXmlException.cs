@@ -27,7 +27,7 @@ namespace QuasiXml
 {
     public class QuasiXmlException : Exception
     {
-        public int LineNumber { get; set; }
+        public int LineNumber { get; private set; }
 
         public QuasiXmlException()
             : base() { }
@@ -35,8 +35,17 @@ namespace QuasiXml
         public QuasiXmlException(string message)
             : base(message) { }
 
+        public QuasiXmlException(string message, Exception innerException)
+            : base(message, innerException)  { }
+
         public QuasiXmlException(string message, int lineNumber)
             : base(message)
+        {
+            LineNumber = lineNumber;
+        }
+
+        public QuasiXmlException(string message, int lineNumber, Exception innerException)
+            : base(message, innerException)
         {
             LineNumber = lineNumber;
         }
