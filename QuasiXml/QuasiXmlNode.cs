@@ -150,8 +150,6 @@ namespace QuasiXml
             int lastSearchTagStartPosition = 0;
             int searchTagStartPosition = 0;
             int tagEndPosition = -1;
-            int commentEndPosition = -1;
-            int cdataEndPosition = -1;
 
             while (true)
             {
@@ -159,14 +157,8 @@ namespace QuasiXml
                 int commentBeginPosition = markup.IndexOf("<!--", searchTagStartPosition);
                 int cdataBeginPosition = markup.IndexOf("<![CDATA[", searchTagStartPosition);
 
-                if (cdataBeginPosition != -1)
-                    cdataEndPosition = markup.IndexOf("]]>", cdataBeginPosition);
-
-                if (commentBeginPosition != -1)
-                    commentEndPosition = markup.IndexOf("-->", commentBeginPosition);
-
-                bool tagIsInsideCommentBlock = tagBeginPosition >= commentBeginPosition && tagBeginPosition <= commentEndPosition;
-                bool tagIsInsideCdataBlock = tagBeginPosition >= cdataBeginPosition && tagBeginPosition <= cdataEndPosition;
+                bool tagIsCommentStart = tagBeginPosition == commentBeginPosition;
+                bool tagIsCdataStart = tagBeginPosition == cdataBeginPosition;
 
                 try
                 {
@@ -175,15 +167,36 @@ namespace QuasiXml
                         //Retrieve last iterations nodes text by looking in the space between the last tags end and current tags start
                         string value = string.Empty;
 
-                        if (isRoot == false)
+                        if ((tagBeginPosition - 1) - tagEndPosition >= 0)
                             value = markup.Substring(tagEndPosition + 1, (tagBeginPosition - 1) - tagEndPosition); //Do not include start and end tag in value
                         if (value.Trim() != string.Empty)
                             openNodes[openNodes.Count - 1].Item1.Children.Add(new QuasiXmlNode() { NodeType = QuasiXmlNodeType.Text, Name = null, Value = value });
                     }
 
-                    if (tagBeginPosition != -1 && tagIsInsideCommentBlock == false && tagIsInsideCdataBlock == false)
+                    if (tagBeginPosition != -1 && tagIsCommentStart == false && tagIsCdataStart == false)
                     {
-                        tagEndPosition = markup.ToLower().IndexOf(">", tagBeginPosition);
+                        //Check if next tags start token is found before this tags end token
+                        int nextTagStartTokenIndex = markup.IndexOf("<", tagBeginPosition + 1);
+                        if ((nextTagStartTokenIndex < markup.IndexOf(">", tagBeginPosition)) && tagEndPosition != -1 && nextTagStartTokenIndex != -1)
+                        {
+                            if (ParseSettings.AbortOnError)
+                                throw new QuasiXmlException("Missing tag end token.", getLineNumber(markup, tagBeginPosition));
+
+                            searchTagStartPosition = nextTagStartTokenIndex - 1; //Ignore this tag by moving forward to right before the next tags start
+                            continue;
+                        }
+
+                        tagEndPosition = markup.IndexOf(">", tagBeginPosition); //TODO: Really seek within attribute values? Is '>' allowed in attribute values?
+
+                        if (tagEndPosition == -1) //Should only occur if the last tag in the markup is missing an end token
+                        {
+                            if (ParseSettings.AbortOnError)
+                                throw new QuasiXmlException("Missing tag end token.", getLineNumber(markup, tagBeginPosition));
+
+                            markup = markup + '>';
+                            lastSearchTagStartPosition = tagBeginPosition - 1;
+                        }
+
                         bool isEndTag = markup.Substring(tagBeginPosition + 1, 1) == "/";
                         bool isSelfClosingTag = markup.Substring(tagBeginPosition, (tagEndPosition - tagBeginPosition) + 1).Replace(" ", string.Empty).Contains("/>");
                         searchTagStartPosition = tagEndPosition + 1;
@@ -192,7 +205,7 @@ namespace QuasiXml
                         {
                             int initialNumberOfOpenTags = openNodes.Count;
 
-                            //Remove the last occrance of the current node type:
+                            //Remove the last occurance of the current node type:
                             for (int i = openNodes.Count; i > 0; i--)
                                 if (openNodes[i - 1].Item1.Name == extractName(markup, tagBeginPosition + 1))
                                     openNodes.RemoveAt(i - 1);
@@ -240,27 +253,48 @@ namespace QuasiXml
                     {
                         break;
                     }
-                    else if (tagIsInsideCommentBlock)
+                    else if (tagIsCommentStart)
                     {
+                        //Find comment end
+                        int commentEndPosition = markup.IndexOf("-->", commentBeginPosition);
+                        if (commentEndPosition == -1)
+                        {
+                            if (ParseSettings.AbortOnError)
+                                throw new QuasiXmlException("Missing comment end token.", getLineNumber(markup, commentBeginPosition));
+                            else
+                            {
+                                searchTagStartPosition = commentBeginPosition + 1; //Recover by ignoring  this comment start
+                                tagEndPosition = searchTagStartPosition;
+                                continue;
+                            }
+                        }
+
                         string comment = markup.Substring(commentBeginPosition + "<!--".Length, commentEndPosition - (commentBeginPosition + "<!--".Length));
-
                         openNodes[openNodes.Count - 1].Item1.Children.Add(new QuasiXmlNode() { NodeType = QuasiXmlNodeType.Comment, Name = null, Value = comment });
-
                         searchTagStartPosition = commentEndPosition + "-->".Length - 1;
                         tagEndPosition = searchTagStartPosition;
                     }
-                    else if (tagIsInsideCdataBlock)
+                    else if (tagIsCdataStart)
                     {
+                        //Find CDATA end
+                        int cdataEndPosition = markup.IndexOf("]]>", cdataBeginPosition);
+                        if (cdataEndPosition == -1)
+                        {
+                            if (ParseSettings.AbortOnError)
+                                throw new QuasiXmlException("Missing CDATA end token.", getLineNumber(markup, cdataBeginPosition));
+                            else
+                            {
+                                searchTagStartPosition = cdataBeginPosition + 1; //Recover by ignoring  this CDATA start
+                                tagEndPosition = searchTagStartPosition;
+                                continue;
+                            }
+                        }
+
                         string cdata = markup.Substring(cdataBeginPosition + "<![CDATA[".Length, cdataEndPosition - (cdataBeginPosition + "<![CDATA[".Length));
-
                         openNodes[openNodes.Count - 1].Item1.Children.Add(new QuasiXmlNode() { NodeType = QuasiXmlNodeType.CDATA, Name = null, Value = cdata });
-
                         searchTagStartPosition = cdataEndPosition + "]]>".Length - 1;
                         tagEndPosition = searchTagStartPosition;
                     }
-
-                    if (lastSearchTagStartPosition == searchTagStartPosition)
-                        throw new QuasiXmlException("Missing end token.", getLineNumber(markup, tagBeginPosition));
 
                     lastSearchTagStartPosition = searchTagStartPosition;
                 }
@@ -277,7 +311,20 @@ namespace QuasiXml
             if (openNodes.Count > 0)
             {
                 if (ParseSettings.AutoCloseOpenTags == false)
-                    throw new QuasiXmlException("Missing end tag.");
+                    if (ParseSettings.AbortOnError == true)
+                        throw new QuasiXmlException("Missing end tag.");
+                    else
+                    {
+                        List<Tuple<QuasiXmlNode, int>> nodesToRemove = new List<Tuple<QuasiXmlNode,int>>();
+                        foreach (Tuple<QuasiXmlNode, int> openNode in openNodes)
+                        {
+                            this.Children.Remove(openNode.Item1);
+                            nodesToRemove.Add(openNode);
+                        }
+
+                        foreach (Tuple<QuasiXmlNode, int> openNode in nodesToRemove)
+                            openNodes.Remove(openNode);
+                    }
                 else
                     throw new NotImplementedException("Auto closing of open tags not yet supported.");
                     //TODO: auto close
