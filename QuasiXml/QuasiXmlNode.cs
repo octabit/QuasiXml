@@ -453,7 +453,17 @@ namespace QuasiXml
 
         public override string ToString()
         {
-            return this.OuterMarkup;
+            switch (this.NodeType)
+            {
+                case QuasiXmlNodeType.Text:
+                    return "Text, Value=\"" + this.Value + "\"";
+                case QuasiXmlNodeType.CDATA:
+                    return "CDATA, Value=\"" + this.Value + "\"";
+                case QuasiXmlNodeType.Comment:
+                    return "Comment, Value=\"" + this.Value + "\"";
+                default:
+                    return "Element, Name=\"" + this.Name + "\"";
+            }
         }
 
         private void OnChildrenChanged(object sender, NotifyCollectionChangedEventArgs e)
