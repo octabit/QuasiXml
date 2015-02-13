@@ -33,7 +33,7 @@ namespace QuasiXmlTest
     public class QuasiXmlRenderTests
     {
         [TestMethod]
-        public void TestRenderGenerateSameOutputAsSystemXml()
+        public void TestCanRenderSameOutputAsSystemXml()
         {
             //Arrange
             string markup = @"<root>
@@ -76,7 +76,6 @@ namespace QuasiXmlTest
                              "    " + "    " + "</subelement>" + Environment.NewLine +
                              "    " + "</element>" + Environment.NewLine +
                              "</root>" + Environment.NewLine;
-
 
             Assert.AreEqual(control, result);
         }
