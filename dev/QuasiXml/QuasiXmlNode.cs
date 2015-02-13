@@ -43,6 +43,20 @@ namespace QuasiXml
         public QuasiXmlParseSettings ParseSettings { get; set; }
         public QuasiXmlRenderSettings RenderSettings { get; set; }
 
+        public QuasiXmlNodeCollection Descendants
+        {
+            get // Returns a collection containing all decending nodes
+            {
+                QuasiXmlNodeCollection descendants = new QuasiXmlNodeCollection();
+                descendants.AddRange(Children);
+
+                foreach (QuasiXmlNode node in Children)
+                    descendants.AddRange(node.Descendants);
+
+                return descendants;
+            }
+        }
+
         public string InnerMarkup
         {
             get // Returns a rendered string of child nodes
