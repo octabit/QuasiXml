@@ -103,5 +103,29 @@ namespace QuasiXmlTest
 
             Assert.AreNotEqual(document.InnerXml, root.OuterMarkup);
         }
+
+        [TestMethod]
+        public void TestCanGetDescendants()
+        {
+            string markup =
+            @"<root>
+                <element test=""true"">
+                    <subelement>
+                        <subsubelement test=""true"">text</subsubelement>
+                    </subelement>
+                </element>
+            </root>";
+
+            QuasiXmlNode root = new QuasiXmlNode();
+            root.OuterMarkup = markup;
+
+            var testNodes = root.Descendants.Where(node => node.Attributes.ContainsKey("test") && node.Attributes["test"] == "true").ToList();
+
+            Assert.IsTrue(root.Descendants.Count(node => node.Name == "element") == 1);
+            Assert.IsTrue(root.Descendants.Count(node => node.Name == "subelement") == 1);
+            Assert.IsTrue(root.Descendants.Count(node => node.Name == "subsubelement") == 1);
+            Assert.AreEqual("element", testNodes[0].Name);
+            Assert.AreEqual("subsubelement", testNodes[1].Name);
+        }
     }
 }
