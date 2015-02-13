@@ -1,4 +1,5 @@
-﻿/*
+﻿using System.Collections.Generic;
+/*
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
  * Copyright © 2015 Kevin Thomasson, thomassonkevin@gmail.com
@@ -22,10 +23,18 @@
  * Source code: https://quasixml.codeplex.com/
  */
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 
 namespace QuasiXml
 {
     public class QuasiXmlNodeCollection : ObservableCollection<QuasiXmlNode>
     {
+        public void AddRange(QuasiXmlNodeCollection items)
+        {
+            this.CheckReentrancy();
+            foreach (var item in items)
+                this.Items.Add(item);
+            this.OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
+        }
     }
 }
