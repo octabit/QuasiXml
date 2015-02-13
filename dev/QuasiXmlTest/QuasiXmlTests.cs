@@ -49,11 +49,11 @@ namespace QuasiXmlTest
         }
 
         [TestMethod]
-        public void TestParentPropertyIsSetCorrectlyWhenModifyingTree()
+        public void TestCanSetParentPropertyCorrectlyWhenModifyingTree()
         {
             string markup = @"<root>
-                <element attribute=""elementattribute"" attribute2=""elementattribute2"">
-                    <subelement hej=""hå"" />
+                <element attribute=""attributedata"" attribute2=""attributedata2"">
+                    <subelement attribute=""attributedata"" />
                 </element>
             </root>";
 
@@ -61,7 +61,7 @@ namespace QuasiXmlTest
             root.OuterMarkup = markup;
 
             QuasiXmlNode newNode = new QuasiXmlNode();
-            newNode.OuterMarkup = @"<newnode >hej</newnode>";
+            newNode.OuterMarkup = @"<newnode >text</newnode>";
             root.Children.Add(newNode);
 
             Assert.AreEqual(root["element"], root["element"]["subelement"].Parent);
@@ -69,7 +69,7 @@ namespace QuasiXmlTest
         }
 
         [TestMethod]
-        public void TestSetInnerTextProperty()
+        public void TestCanSetInnerTextProperty()
         {
             string markup = @"<root>
                 <element>This is a test

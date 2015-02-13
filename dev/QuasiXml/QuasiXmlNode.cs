@@ -45,13 +45,11 @@ namespace QuasiXml
 
         public string InnerMarkup
         {
-            // Returns a rendered string of child nodes
-            get
+            get // Returns a rendered string of child nodes
             {
-                return render(this, false);
+                return Render(this, false);
             }
-            // Parse incoming markup and replace child nodes with the results children
-            set
+            set // Parse incoming markup and replace child nodes with the results children
             {
                 QuasiXmlNode root = new QuasiXmlNode();
                 root.parse("<root>" + value + "</root>");
@@ -61,13 +59,11 @@ namespace QuasiXml
 
         public string OuterMarkup
         {
-            // Returns a rendered string of this node and its children
-            get
+            get // Returns a rendered string of this node and its children
             {
-                return render(this, true);
+                return Render(this, true);
             }
-            // Parse incoming markup and replace this node with the result
-            set
+            set  // Parse incoming markup and replace this node with the result
             {
                 this.parse(value);
             }
@@ -89,9 +85,7 @@ namespace QuasiXml
 
                 return innerTextBuilder.ToString();
             }
-
-            // Replaces all child nodes with an text node containing set value
-            set
+            set // Replaces all child nodes with an text node containing set value
             {
                 this.Children.Clear();
                 this.Children.Add(new QuasiXmlNode() { NodeType = QuasiXmlNodeType.Text, Value = value });
@@ -180,7 +174,7 @@ namespace QuasiXml
                         if ((nextTagStartTokenIndex < markup.IndexOf(">", tagBeginPosition)) && tagEndPosition != -1 && nextTagStartTokenIndex != -1)
                         {
                             if (ParseSettings.AbortOnError)
-                                throw new QuasiXmlException("Missing tag end token.", getLineNumber(markup, tagBeginPosition));
+                                throw new QuasiXmlException("Missing tag end token.", GetLineNumber(markup, tagBeginPosition));
 
                             searchTagStartPosition = nextTagStartTokenIndex - 1; //Ignore this tag by moving forward to right before the next tags start
                             continue;
@@ -191,7 +185,7 @@ namespace QuasiXml
                         if (tagEndPosition == -1) //Should only occur if the last tag in the markup is missing an end token
                         {
                             if (ParseSettings.AbortOnError)
-                                throw new QuasiXmlException("Missing tag end token.", getLineNumber(markup, tagBeginPosition));
+                                throw new QuasiXmlException("Missing tag end token.", GetLineNumber(markup, tagBeginPosition));
 
                             markup = markup + '>';
                             lastSearchTagStartPosition = tagBeginPosition - 1;
@@ -207,12 +201,12 @@ namespace QuasiXml
 
                             //Remove the last occurance of the current node type:
                             for (int i = openNodes.Count; i > 0; i--)
-                                if (openNodes[i - 1].Item1.Name == extractName(markup, tagBeginPosition + 1))
+                                if (openNodes[i - 1].Item1.Name == ExtractName(markup, tagBeginPosition + 1))
                                     openNodes.RemoveAt(i - 1);
 
                             if (initialNumberOfOpenTags == openNodes.Count)
                                 if (ParseSettings.AbortOnError)
-                                    throw new QuasiXmlException("Missing open '" + extractName(markup, tagBeginPosition + 1) + "' tag to close.", getLineNumber(markup, tagBeginPosition));
+                                    throw new QuasiXmlException("Missing open '" + ExtractName(markup, tagBeginPosition + 1) + "' tag to close.", GetLineNumber(markup, tagBeginPosition));
 
                             if (openNodes.Count > 0)
                                 currentTag = openNodes[openNodes.Count - 1].Item1; //Current tag is the last open tag
@@ -235,8 +229,8 @@ namespace QuasiXml
                         if (openNodes.Count > 0)
                             currentTag.Parent = openNodes.Last().Item1;
                         currentTag.NodeType = QuasiXmlNodeType.Element;
-                        currentTag.Name = extractName(markup, tagBeginPosition);
-                        currentTag.Attributes = extractAttributes(markup, tagBeginPosition, tagEndPosition);
+                        currentTag.Name = ExtractName(markup, tagBeginPosition);
+                        currentTag.Attributes = ExtractAttributes(markup, tagBeginPosition, tagEndPosition);
                         currentTag.IsSelfClosing = isSelfClosingTag;
 
                         if (isSelfClosingTag == false)
@@ -260,7 +254,7 @@ namespace QuasiXml
                         if (commentEndPosition == -1)
                         {
                             if (ParseSettings.AbortOnError)
-                                throw new QuasiXmlException("Missing comment end token.", getLineNumber(markup, commentBeginPosition));
+                                throw new QuasiXmlException("Missing comment end token.", GetLineNumber(markup, commentBeginPosition));
                             else
                             {
                                 searchTagStartPosition = commentBeginPosition + 1; //Recover by ignoring  this comment start
@@ -281,7 +275,7 @@ namespace QuasiXml
                         if (cdataEndPosition == -1)
                         {
                             if (ParseSettings.AbortOnError)
-                                throw new QuasiXmlException("Missing CDATA end token.", getLineNumber(markup, cdataBeginPosition));
+                                throw new QuasiXmlException("Missing CDATA end token.", GetLineNumber(markup, cdataBeginPosition));
                             else
                             {
                                 searchTagStartPosition = cdataBeginPosition + 1; //Recover by ignoring  this CDATA start
@@ -304,7 +298,7 @@ namespace QuasiXml
                 }
                 catch (Exception e)
                 {
-                    throw new QuasiXmlException("Parser error.", getLineNumber(markup, tagBeginPosition), e);
+                    throw new QuasiXmlException("Parser error.", GetLineNumber(markup, tagBeginPosition), e);
                 }
             }
 
@@ -331,12 +325,12 @@ namespace QuasiXml
             }
         }
 
-        private string render(QuasiXmlNode node, bool includeRoot)
+        private string Render(QuasiXmlNode node, bool includeRoot)
         {
-            return render(node, includeRoot, 0);
+            return Render(node, includeRoot, 0);
         }
 
-        private string render(QuasiXmlNode node, bool includeRoot, int level)
+        private string Render(QuasiXmlNode node, bool includeRoot, int level)
         {
             string currentLevelIndent = string.Empty;
             string lineEnd = string.Empty;
@@ -389,7 +383,7 @@ namespace QuasiXml
                             _isLineIndented = false;
 
                             foreach (QuasiXmlNode child in node.Children)
-                                markupBuilder.Append(render(child, true, level + 1));
+                                markupBuilder.Append(Render(child, true, level + 1));
 
                             if (_isLineIndented)
                             {
@@ -445,7 +439,7 @@ namespace QuasiXml
             else
             {
                 foreach (QuasiXmlNode child in node.Children)
-                    markupBuilder.Append(render(child, true, level + 1));
+                    markupBuilder.Append(Render(child, true, level + 1));
             }
 
             return markupBuilder.ToString();
@@ -475,7 +469,7 @@ namespace QuasiXml
             }
         }
 
-        private string extractName(string markup, int startTagBeginPosition)
+        private string ExtractName(string markup, int startTagBeginPosition)
         {
             int tagNameStartPosition = markup.IndexOf<char>((c => !char.IsWhiteSpace(c)), startTagBeginPosition + 1); //Find first non-whitespace char after startTagBeginPosition + 1's index
             int tagNameEndPosition = markup.IndexOf(" ", tagNameStartPosition) > 0 && markup.IndexOf(" ", tagNameStartPosition) < markup.IndexOf(">", startTagBeginPosition) 
@@ -485,7 +479,7 @@ namespace QuasiXml
             return markup.Substring(tagNameStartPosition, tagNameEndPosition - tagNameStartPosition);
         }
 
-        private Dictionary<string, string> extractAttributes(string markup, int startTagBeginPosition, int startTagEndPosition)
+        private Dictionary<string, string> ExtractAttributes(string markup, int startTagBeginPosition, int startTagEndPosition)
         {
             Dictionary<string, string> result = new Dictionary<string, string>();
             string startTagContent = markup.Substring(startTagBeginPosition, (startTagEndPosition - startTagBeginPosition) + 1);
@@ -544,7 +538,7 @@ namespace QuasiXml
             return result;
         }
 
-        private static int getLineNumber(string markup, int index)
+        private static int GetLineNumber(string markup, int index)
         {
             int rows = 1;
             int currentIndex = 0;
