@@ -163,7 +163,7 @@ namespace QuasiXmlTest
 
         [TestMethod]
         [ExpectedException(typeof(QuasiXmlException), "Missing end tag.")]
-        public void TestParseShouldThrowExeptionMissingEndTag()
+        public void TestShouldThrowExeptionMissingEndTag()
         {
             string markup =
             @"<root>
@@ -176,7 +176,7 @@ namespace QuasiXmlTest
         }
 
         [TestMethod]
-        public void TestParseCanRecoverFromExeptionMissingEndTag()
+        public void TestCanRecoverFromExeptionMissingEndTag()
         {
             string markup =
             @"<root>
@@ -193,7 +193,7 @@ namespace QuasiXmlTest
         
         [TestMethod]
         [ExpectedException(typeof(QuasiXmlException))]
-        public void TestParseShouldThrowExeptionMissingOpenTagToClose()
+        public void TestShouldThrowExeptionMissingOpenTagToClose()
         {
             string markup =
             @"<root><one><two></two></two></one></root>";
@@ -218,7 +218,7 @@ namespace QuasiXmlTest
 
         [TestMethod]
         [ExpectedException(typeof(QuasiXmlException))]
-        public void TestParseShouldThrowExeptionMissingEndToken()
+        public void TestShouldThrowExeptionMissingEndToken()
         {
             string markup =
             @"<root><one></one</root>";
@@ -244,7 +244,7 @@ namespace QuasiXmlTest
 
         [TestMethod]
         [ExpectedException(typeof(QuasiXmlException))]
-        public void TestParseShouldThrowExeptionMissingCDATAEndToken()
+        public void TestShouldThrowExeptionMissingCDATAEndToken()
         {
             string markup =
             @"<root><one><![CDATA[cdata content]]</one></root>";
@@ -272,7 +272,7 @@ namespace QuasiXmlTest
 
         [TestMethod]
         [ExpectedException(typeof(QuasiXmlException))]
-        public void TestParseShouldThrowExeptionMissingCommentEndToken()
+        public void TestShouldThrowExeptionMissingCommentEndToken()
         {
             string markup =
             @"<root><one><!-- this is a comment --</one></root>";
