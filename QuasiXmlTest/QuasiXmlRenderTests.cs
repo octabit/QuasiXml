@@ -47,7 +47,7 @@ namespace QuasiXmlTest
             //Act
             QuasiXmlNode root = new QuasiXmlNode();
             root.OuterMarkup = markup;
-
+            
             XmlDocument document = new XmlDocument();
             document.LoadXml(markup);
 
