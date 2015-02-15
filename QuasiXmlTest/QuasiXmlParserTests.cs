@@ -35,14 +35,17 @@ namespace QuasiXmlTest
         [TestMethod]
         public void TestCanParseElement()
         {
+            //Arrange
             string markup =
             @"<root>
                 <element>content <subelement>text</subelement></element>
             </root>";
 
+            //Act
             QuasiXmlNode root = new QuasiXmlNode();
             root.OuterMarkup = markup;
 
+            //Assert
             Assert.AreEqual(1, root.Children.Count);
             Assert.AreEqual(2, root["element"].Children.Count);
             Assert.AreEqual("element", root.Children[0].Name);
@@ -52,6 +55,7 @@ namespace QuasiXmlTest
         [TestMethod]
         public void TestCanParseAttribute()
         {
+            //Arrange
             string markup =
             @"<root>
                 <element attribute=""abc123='"" attribute2 ='abc123=""' attribute3= ""abc{0} 123="" />
@@ -76,25 +80,29 @@ namespace QuasiXmlTest
                 <element attribute=""attributedata"" attribute2="" attribute3=""attrubutedata3"" />
             </root>";
 
+            //Act
             root = new QuasiXmlNode(new QuasiXmlParseSettings() { AbortOnError = false });
             root.OuterMarkup = markup;
 
+            //Assert
             Assert.AreEqual("attribute3=", root["element"].Attributes["attribute2"]);
         }
 
         [TestMethod]
         public void TestCanParseSelfClosingTag()
         {
+            //Arrange
             string markup =
             @"<root>
                 <element attribute=""attributedata"" attribute2=""attributedata2"" />
             </root>";
 
+            //Act
             QuasiXmlNode root = new QuasiXmlNode();
             root.OuterMarkup = markup;
 
+            //Assert
             Assert.IsInstanceOfType(root.Children.Single(e => e.Name == "element"), new QuasiXmlNode().GetType());
-
             Assert.AreEqual(1, root.Children.Count);
             Assert.AreEqual("element", root.Children[0].Name);
             Assert.AreEqual(QuasiXmlNodeType.Element, root["element"].NodeType);
@@ -106,12 +114,15 @@ namespace QuasiXmlTest
         [TestMethod]
         public void TestCanParseSelfClosingTagWichIsAlsoRoot()
         {
+            //Arrange
             string markup =
             @"<root attribute=""attributedata"" attribute2=""attributedata2"" />";
 
+            //Act
             QuasiXmlNode root = new QuasiXmlNode();
             root.OuterMarkup = markup;
 
+            //Assert
             Assert.AreEqual(0, root.Children.Count);
             Assert.AreEqual(QuasiXmlNodeType.Element, root.NodeType);
             Assert.AreEqual(2, root.Attributes.Count);
@@ -122,6 +133,7 @@ namespace QuasiXmlTest
         [TestMethod]
         public void TestCanParseMarkupWithComment()
         {
+            //Arrange
             string markup =
             @"<root>
                 <element attribute=""attributedata"" attribute2=""attributedata2"">
@@ -130,9 +142,11 @@ namespace QuasiXmlTest
                 </element>
             </root>";
 
+            //Act
             QuasiXmlNode root = new QuasiXmlNode();
             root.OuterMarkup = markup;
 
+            //Assert
             Assert.AreEqual(1, root.Children.Count);
             Assert.AreEqual(4, root["element"].Children.Count);
             Assert.AreEqual(QuasiXmlNodeType.Comment, root["element"].Children[0].NodeType);
@@ -142,6 +156,7 @@ namespace QuasiXmlTest
         [TestMethod]
         public void TestCanParseMarkupWithCDATA()
         {
+            //Arrange
             string markup =
             @"<root>
                 <element attribute=""elementattribute"" attribute2=""elementattribute2"">
@@ -150,9 +165,11 @@ namespace QuasiXmlTest
                 </element>
             </root>";
 
+            //Act
             QuasiXmlNode root = new QuasiXmlNode();
             root.OuterMarkup = markup;
 
+            //Assert
             Assert.IsInstanceOfType(root.Children.Single(e => e.Name == "element"), new QuasiXmlNode().GetType());
             Assert.AreEqual(3, root["element"].Children.Count);
             Assert.AreEqual(QuasiXmlNodeType.CDATA, root["element"].Children[0].NodeType);
@@ -165,11 +182,13 @@ namespace QuasiXmlTest
         [ExpectedException(typeof(QuasiXmlException), "Missing end tag.")]
         public void TestShouldThrowExeptionMissingEndTag()
         {
+            //Arrange
             string markup =
             @"<root>
                 <element attribute=""attributedata"" attribute2=""attributedata2"">
             </root>";
 
+            //Act
             QuasiXmlNode root = new QuasiXmlNode();
             root.ParseSettings.AbortOnError = true;
             root.OuterMarkup = markup;
@@ -178,15 +197,18 @@ namespace QuasiXmlTest
         [TestMethod]
         public void TestCanRecoverFromExeptionMissingEndTag()
         {
+            //Arrange
             string markup =
             @"<root>
                 <element attribute=""attributedata"" attribute2=""attributedata2"">
             </root>";
 
+            //Act
             QuasiXmlNode root = new QuasiXmlNode();
             root.ParseSettings.AbortOnError = false;
             root.OuterMarkup = markup;
 
+            //Assert
             Assert.AreEqual(QuasiXmlNodeType.Element, root.NodeType);
             Assert.AreEqual(0, root.Children.Count);
         }
@@ -195,9 +217,11 @@ namespace QuasiXmlTest
         [ExpectedException(typeof(QuasiXmlException))]
         public void TestShouldThrowExeptionMissingOpenTagToClose()
         {
+            //Arrange
             string markup =
             @"<root><one><two></two></two></one></root>";
 
+            //Act
             QuasiXmlNode root = new QuasiXmlNode();
             root.ParseSettings.AbortOnError = true;
             root.OuterMarkup = markup;
@@ -206,13 +230,16 @@ namespace QuasiXmlTest
         [TestMethod]
         public void TestCanRecoverFromExeptionMissingOpenTagToClose()
         {
+            //Arrange
             string markup =
             @"<root><one><two></two></two></one></root>";
 
+            //Act
             QuasiXmlNode root = new QuasiXmlNode();
             root.ParseSettings.AbortOnError = false;
             root.OuterMarkup = markup;
 
+            //Assert
             Assert.IsInstanceOfType(root, typeof(QuasiXmlNode));
         }
 
@@ -220,9 +247,11 @@ namespace QuasiXmlTest
         [ExpectedException(typeof(QuasiXmlException))]
         public void TestShouldThrowExeptionMissingEndToken()
         {
+            //Arrange
             string markup =
             @"<root><one></one</root>";
 
+            //Act
             QuasiXmlNode root = new QuasiXmlNode();
             root.ParseSettings.AbortOnError = true;
             root.OuterMarkup = markup;
@@ -231,13 +260,16 @@ namespace QuasiXmlTest
         [TestMethod]
         public void TestCanRecoverFromExeptionMissingEndToken()
         {
+            //Arrange
             string markup =
             @"<root><one></one</root>";
 
+            //Act
             QuasiXmlNode root = new QuasiXmlNode();
             root.ParseSettings.AbortOnError = false;
             root.OuterMarkup = markup;
 
+            //Assert
             Assert.IsInstanceOfType(root, typeof(QuasiXmlNode));
             Assert.AreEqual(0, root.Children.Count);
         }
@@ -246,9 +278,11 @@ namespace QuasiXmlTest
         [ExpectedException(typeof(QuasiXmlException))]
         public void TestShouldThrowExeptionMissingCDATAEndToken()
         {
+            //Arrange
             string markup =
             @"<root><one><![CDATA[cdata content]]</one></root>";
 
+            //Act
             QuasiXmlNode root = new QuasiXmlNode();
             root.ParseSettings.AbortOnError = true;
             root.OuterMarkup = markup;
@@ -257,13 +291,16 @@ namespace QuasiXmlTest
         [TestMethod]
         public void TestCanRecoverFromExeptionMissingCDATAEndToken()
         {
+            //Arrange
             string markup =
-           @"<root><one><![CDATA[cdata content]]</one></root>";
+            @"<root><one><![CDATA[cdata content]]</one></root>";
 
+            //Act
             QuasiXmlNode root = new QuasiXmlNode();
             root.ParseSettings.AbortOnError = false;
             root.OuterMarkup = markup;
 
+            //Assert
             Assert.IsInstanceOfType(root, typeof(QuasiXmlNode));
             Assert.AreEqual(1, root.Children.Count);
             Assert.AreEqual(1, root.Children[0].Children.Count);
@@ -274,9 +311,11 @@ namespace QuasiXmlTest
         [ExpectedException(typeof(QuasiXmlException))]
         public void TestShouldThrowExeptionMissingCommentEndToken()
         {
+            //Arrange
             string markup =
             @"<root><one><!-- this is a comment --</one></root>";
 
+            //Act
             QuasiXmlNode root = new QuasiXmlNode();
             root.ParseSettings.AbortOnError = true;
             root.OuterMarkup = markup;
@@ -285,13 +324,16 @@ namespace QuasiXmlTest
         [TestMethod]
         public void TestCanRecoverFromExeptionMissingCommentEndToken()
         {
+            //Arrange
             string markup =
             @"<root><one><!-- this is a comment --</one></root>";
 
+            //Act
             QuasiXmlNode root = new QuasiXmlNode();
             root.ParseSettings.AbortOnError = false;
             root.OuterMarkup = markup;
 
+            //Assert
             Assert.IsInstanceOfType(root, typeof(QuasiXmlNode));
             Assert.AreEqual(1, root.Children.Count);
             Assert.AreEqual(1, root.Children[0].Children.Count);
