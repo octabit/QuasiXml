@@ -33,19 +33,69 @@ namespace QuasiXml
     public class QuasiXmlNode
     {
         private bool _isLineIndented = false;
+        /// <summary>
+        /// Gets or sets the name of this node.
+        /// </summary>
         public string Name { get; set; }
+        /// <summary>
+        /// Gets or sets this nodes attributes.
+        /// </summary>
         public Dictionary<string, string> Attributes { get; set; }
+        /// <summary>
+        /// Gets or sets the value of this node.
+        /// </summary>
         public string Value { get; set; }
+        /// <summary>
+        /// Gets or sets this nodes parent node.
+        /// </summary>
         public QuasiXmlNode Parent { get; set; }
+        /// <summary>
+        /// Gets or sets this nodes child nodes.
+        /// </summary>
         public QuasiXmlNodeCollection Children { get; set; }
+        /// <summary>
+        /// Gets or sets this nodes type.
+        /// </summary>
         public QuasiXmlNodeType NodeType { get; set; }
+        /// <summary>
+        /// Determines whether or not this node renders as a self closing tag.
+        /// </summary>
         public bool IsSelfClosing { get; set; }
+        /// <summary>
+        /// Gets or sets this nodes parser settings.
+        /// </summary>
         public QuasiXmlParseSettings ParseSettings { get; set; }
+        /// <summary>
+        /// Gets or sets this nodes render settings.
+        /// </summary>
         public QuasiXmlRenderSettings RenderSettings { get; set; }
 
+        /// <summary>
+        /// Gets a collection of all ascending nodes.
+        /// </summary>
+        public QuasiXmlNodeCollection Ascendants
+        {
+            get
+            {
+                if (Parent == null)
+                    return null;
+
+                QuasiXmlNodeCollection ascendants = new QuasiXmlNodeCollection();
+                ascendants.Add(Parent);
+
+                if(Parent.Ascendants != null)
+                    ascendants.AddRange(Parent.Ascendants);
+
+                return ascendants;
+            }
+        }
+
+        /// <summary>
+        /// Gets a collection of all decending nodes.
+        /// </summary>
         public QuasiXmlNodeCollection Descendants
         {
-            get // Returns a collection containing all decending nodes
+            get
             {
                 QuasiXmlNodeCollection descendants = new QuasiXmlNodeCollection();
                 descendants.AddRange(Children);
@@ -57,32 +107,43 @@ namespace QuasiXml
             }
         }
 
+        /// <summary>
+        /// Gets a rendered string of child nodes. Set parses incoming markup and replaces this nodes children with the result of the parse operation.
+        /// </summary>
+        /// <exception cref="QuasiXmlException">A ProtoXmlParseException is thrown if the markup cannot be parsed.</exception>
         public string InnerMarkup
         {
-            get // Returns a rendered string of child nodes
+            get
             {
                 return Render(this, false);
             }
-            set // Parse incoming markup and replace child nodes with the results children
+            set
             {
                 QuasiXmlNode root = new QuasiXmlNode();
-                root.parse("<root>" + value + "</root>");
+                root.Parse("<root>" + value + "</root>");
                 this.Children = root.Children;
             }
         }
 
+        /// <summary>
+        /// Gets a rendered string of this node and its children. Set parses incoming markup and replaces this node with the result of the parse operation.
+        /// </summary>
+        /// <exception cref="QuasiXmlException">A ProtoXmlParseException is thrown if the markup cannot be parsed.</exception>
         public string OuterMarkup
         {
-            get // Returns a rendered string of this node and its children
+            get
             {
                 return Render(this, true);
             }
-            set  // Parse incoming markup and replace this node with the result
+            set
             {
-                this.parse(value);
+                this.Parse(value);
             }
         }
 
+        /// <summary>
+        /// Gets the concatenated values of this node and all its children. Set replaces all child nodes with a text node containing the given value.
+        /// </summary>
         public string InnerText
         {
             get
@@ -99,14 +160,14 @@ namespace QuasiXml
 
                 return innerTextBuilder.ToString();
             }
-            set // Replaces all child nodes with an text node containing set value
+            set
             {
                 this.Children.Clear();
                 this.Children.Add(new QuasiXmlNode() { NodeType = QuasiXmlNodeType.Text, Value = value });
             }
         }
 
-        // Overloads the square brackets to provide array-like access
+        //Overloads the square brackets to provide array-like access
         public QuasiXmlNode this[string name]
         {
             get
@@ -148,8 +209,8 @@ namespace QuasiXml
             RenderSettings = renderSettings;
         }
 
-        /// <exception cref="QuasiXmlException">A ProtoXmlParseException is thrown when the markup cannot be parsed.</exception>
-        private void parse(string markup)
+        /// <exception cref="QuasiXmlException">A ProtoXmlParseException is thrown if the markup cannot be parsed.</exception>
+        private void Parse(string markup)
         {
             bool isRoot = true;
             QuasiXmlNode currentTag = null;
