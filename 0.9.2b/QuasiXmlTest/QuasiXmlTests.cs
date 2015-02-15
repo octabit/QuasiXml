@@ -35,19 +35,15 @@ namespace QuasiXmlTest
         [TestMethod]
         public void TestCanAccessNodesWithIndexingAccessor()
         {
-            //Arrange
-            string markup = 
-            @"<root>
+            string markup = @"<root>
                 <element>
                     <subelement attribute=""attributedata"" />
                 </element>
             </root>";
 
-            //Act
             QuasiXmlNode root = new QuasiXmlNode();
             root.OuterMarkup = markup;
 
-            //Assert
             Assert.AreEqual(root["element"]["subelement"].Attributes["attribute"], "attributedata");
             Assert.AreEqual(root["element"]["subelement"]["nonexisting"], null);
         }
@@ -55,9 +51,7 @@ namespace QuasiXmlTest
         [TestMethod]
         public void TestCanSetParentPropertyCorrectlyWhenModifyingTree()
         {
-            //Arrange
-            string markup = 
-            @"<root>
+            string markup = @"<root>
                 <element attribute=""attributedata"" attribute2=""attributedata2"">
                     <subelement attribute=""attributedata"" />
                 </element>
@@ -66,12 +60,10 @@ namespace QuasiXmlTest
             QuasiXmlNode root = new QuasiXmlNode();
             root.OuterMarkup = markup;
 
-            //Act
             QuasiXmlNode newNode = new QuasiXmlNode();
             newNode.OuterMarkup = @"<newnode >text</newnode>";
             root.Children.Add(newNode);
 
-            //Assert
             Assert.AreEqual(root["element"], root["element"]["subelement"].Parent);
             Assert.AreEqual(root["element"].Parent, root["newnode"].Parent);
         }
@@ -79,9 +71,7 @@ namespace QuasiXmlTest
         [TestMethod]
         public void TestCanSetInnerTextProperty()
         {
-            //Arrange
-            string markup = 
-            @"<root>
+            string markup = @"<root>
                 <element>This is a test
                     <subelement>text.</subelement>
                 </element>
@@ -90,10 +80,8 @@ namespace QuasiXmlTest
             QuasiXmlNode root = new QuasiXmlNode();
             root.OuterMarkup = markup;
 
-            //Act
             root["element"].InnerText = "Hakkuna \t\nmatata";
 
-            //Assert
             Assert.AreEqual("Hakkuna \t\nmatata", root["element"].InnerText);
             Assert.AreEqual(1, root["element"].Children.Count);
         }
@@ -101,15 +89,14 @@ namespace QuasiXmlTest
         [TestMethod]
         public void TestSystemXmlCharacterEntities()
         {
-            string markup = 
-            @"<root>
+            string markup = @"<root>
                 <element attribute=""data"">This is a text ... and I want to replace the string ""..."" with the XML character entity &amp;ellipsis; post parsing.</element>
             </root>";
 
             QuasiXmlNode root = new QuasiXmlNode();
             root.OuterMarkup = markup;
             root["element"].Children[0].Value = root["element"].Children[0].Value.Replace("...", "&hellip;");
-            
+
             XmlDocument document = new XmlDocument();
             document.LoadXml(markup);
             document["root"]["element"].ChildNodes[0].Value = document["root"]["element"].ChildNodes[0].Value.Replace("...", "&hellip;");
@@ -120,7 +107,6 @@ namespace QuasiXmlTest
         [TestMethod]
         public void TestCanGetDescendants()
         {
-            //Arrange
             string markup =
             @"<root>
                 <element test=""true"">
@@ -133,72 +119,13 @@ namespace QuasiXmlTest
             QuasiXmlNode root = new QuasiXmlNode();
             root.OuterMarkup = markup;
 
-            //Act
             var testNodes = root.Descendants.Where(node => node.Attributes.ContainsKey("test") && node.Attributes["test"] == "true").ToList();
 
-            //Assert
             Assert.IsTrue(root.Descendants.Count(node => node.Name == "element") == 1);
             Assert.IsTrue(root.Descendants.Count(node => node.Name == "subelement") == 1);
             Assert.IsTrue(root.Descendants.Count(node => node.Name == "subsubelement") == 1);
             Assert.AreEqual("element", testNodes[0].Name);
             Assert.AreEqual("subsubelement", testNodes[1].Name);
-        }
-
-        [TestMethod]
-        public void TestCanGetAscendants()
-        {
-            //Arrange
-            string markup =
-            @"<root>
-                <element test=""true"">
-                    <subelement>
-                        <subsubelement test=""true"">text</subsubelement>
-                    </subelement>
-                </element>
-            </root>";
-
-            QuasiXmlNode root = new QuasiXmlNode();
-            root.OuterMarkup = markup;
-
-            //Act
-            var subsubelement = root.Descendants.Single(node => node.Name == "subsubelement");
-
-            //Assert
-            Assert.IsTrue(subsubelement.Ascendants.Count(node => node.Name == "subelement") == 1);
-            Assert.IsTrue(subsubelement.Ascendants.Count(node => node.Name == "element") == 1);
-            Assert.IsTrue(subsubelement.Ascendants.Count(node => node.Name == "root") == 1);
-            Assert.AreEqual(3, subsubelement.Ascendants.Count);
-        }
-
-        [TestMethod]
-        public void TestCanGetAllLinksInXHTML()
-        {
-            //Arrange
-            string markup =
-            @"<html>
-                <body>
-                    <article>
-                        <p>
-                           This is a test text, and <a href=""http://foo.bar"">this is a link</a>.
-                        </p>
-                    </article>
-                    <footer>
-                        <a href=""http://foo.bar/2"">Another link</a>
-                    </footer>
-                </body>
-            </html>";
-
-            QuasiXmlNode root = new QuasiXmlNode();
-            root.OuterMarkup = markup;
-
-            //Act
-            var links = root.Descendants.Where(node => node.Name == "a" &&
-                node.Attributes.ContainsKey("href")).ToList();
-
-            //Assert
-            Assert.AreEqual(2, links.Count);
-            Assert.AreEqual("http://foo.bar", links[0].Attributes["href"]);
-            Assert.AreEqual("http://foo.bar/2", links[1].Attributes["href"]);
         }
     }
 }
