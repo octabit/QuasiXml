@@ -21,11 +21,12 @@
  * License: GNU Lesser General Public License (LGPL)
  * Source code: https://quasixml.codeplex.com/
  */
-using System;
 using System.Xml;
 using QuasiXml;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System.Diagnostics;
+using System.IO;
 
 namespace QuasiXmlTest
 {
