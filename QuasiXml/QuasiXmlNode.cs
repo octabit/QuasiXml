@@ -33,6 +33,11 @@ namespace QuasiXml
     public class QuasiXmlNode
     {
         private bool _isLineIndented = false;
+        private const string CdataStart = "<![CDATA[";
+        private const string CdataEnd = "]]>";
+        private const string CommentStart = "<!--";
+        private const string CommentEnd = "-->";
+
         /// <summary>
         /// Gets or sets the name of this node.
         /// </summary>
@@ -220,14 +225,25 @@ namespace QuasiXml
             int searchTagStartPosition = 0;
             int tagEndPosition = -1;
 
+            int commentBeginPosition = -1;
+            int cdataBeginPosition = -1;
+
             while (true)
             {
-                int tagBeginPosition = markup.IndexOf("<", searchTagStartPosition);
-                int commentBeginPosition = markup.IndexOf("<!--", searchTagStartPosition);
-                int cdataBeginPosition = markup.IndexOf("<![CDATA[", searchTagStartPosition);
+                int tagBeginPosition = markup.IndexOf('<', searchTagStartPosition);
 
-                bool tagIsCommentStart = tagBeginPosition == commentBeginPosition;
-                bool tagIsCdataStart = tagBeginPosition == cdataBeginPosition;
+                bool tagIsCommentStart = false;
+                bool tagIsCdataStart = false;
+
+                //Is the character following tag start equal to '!'?
+                if (markup.Length - 1 > tagBeginPosition + 1 && markup[tagBeginPosition + 1] == '!')
+                {
+                    commentBeginPosition = markup.IndexOf(CommentStart, tagBeginPosition, StringComparison.Ordinal);
+                    cdataBeginPosition = markup.IndexOf(CdataStart, tagBeginPosition, StringComparison.Ordinal);
+
+                    tagIsCommentStart = tagBeginPosition == commentBeginPosition;
+                    tagIsCdataStart = tagBeginPosition == cdataBeginPosition;
+                }
 
                 try
                 {
@@ -238,15 +254,15 @@ namespace QuasiXml
 
                         if ((tagBeginPosition - 1) - tagEndPosition >= 0)
                             value = markup.Substring(tagEndPosition + 1, (tagBeginPosition - 1) - tagEndPosition); //Do not include start and end tag in value
-                        if (value.Trim() != string.Empty)
+                        if (!string.IsNullOrWhiteSpace(value))
                             openNodes[openNodes.Count - 1].Item1.Children.Add(new QuasiXmlNode() { NodeType = QuasiXmlNodeType.Text, Name = null, Value = value });
                     }
 
                     if (tagBeginPosition != -1 && tagIsCommentStart == false && tagIsCdataStart == false)
                     {
                         //Check if next tags start token is found before this tags end token
-                        int nextTagStartTokenIndex = markup.IndexOf("<", tagBeginPosition + 1);
-                        if ((nextTagStartTokenIndex < markup.IndexOf(">", tagBeginPosition)) && tagEndPosition != -1 && nextTagStartTokenIndex != -1)
+                        int nextTagStartTokenIndex = markup.IndexOf('<', tagBeginPosition + 1);
+                        if ((nextTagStartTokenIndex < markup.IndexOf('>', tagBeginPosition)) && tagEndPosition != -1 && nextTagStartTokenIndex != -1)
                         {
                             if (ParseSettings.AbortOnError)
                                 throw new QuasiXmlException("Missing tag end token.", GetLineNumber(markup, tagBeginPosition));
@@ -255,7 +271,7 @@ namespace QuasiXml
                             continue;
                         }
 
-                        tagEndPosition = markup.IndexOf(">", tagBeginPosition); //TODO: Really seek within attribute values? Is '>' allowed in attribute values?
+                        tagEndPosition = markup.IndexOf('>', tagBeginPosition); //TODO: Really seek within attribute values? Is '>' allowed in attribute values?
 
                         if (tagEndPosition == -1) //Should only occur if the last tag in the markup is missing an end token
                         {
@@ -266,7 +282,7 @@ namespace QuasiXml
                             lastSearchTagStartPosition = tagBeginPosition - 1;
                         }
 
-                        bool isEndTag = markup.Substring(tagBeginPosition + 1, 1) == "/";
+                        bool isEndTag = markup[tagBeginPosition + 1] == '/'; //TODO: What if tag contains whitespace before  '/'
                         bool isSelfClosingTag = markup.Substring(tagBeginPosition, (tagEndPosition - tagBeginPosition) + 1).Replace(" ", string.Empty).Contains("/>");
                         searchTagStartPosition = tagEndPosition + 1;
 
@@ -325,43 +341,43 @@ namespace QuasiXml
                     else if (tagIsCommentStart)
                     {
                         //Find comment end
-                        int commentEndPosition = markup.IndexOf("-->", commentBeginPosition);
+                        int commentEndPosition = markup.IndexOf(CommentEnd, commentBeginPosition, StringComparison.Ordinal);
                         if (commentEndPosition == -1)
                         {
                             if (ParseSettings.AbortOnError)
                                 throw new QuasiXmlException("Missing comment end token.", GetLineNumber(markup, commentBeginPosition));
                             else
                             {
-                                searchTagStartPosition = commentBeginPosition + 1; //Recover by ignoring  this comment start
+                                searchTagStartPosition = commentBeginPosition + 1; //Recover by ignoring this comment start
                                 tagEndPosition = searchTagStartPosition;
                                 continue;
                             }
                         }
 
-                        string comment = markup.Substring(commentBeginPosition + "<!--".Length, commentEndPosition - (commentBeginPosition + "<!--".Length));
+                        string comment = markup.Substring(commentBeginPosition + CommentStart.Length, commentEndPosition - (commentBeginPosition + CommentStart.Length));
                         openNodes[openNodes.Count - 1].Item1.Children.Add(new QuasiXmlNode() { NodeType = QuasiXmlNodeType.Comment, Name = null, Value = comment });
-                        searchTagStartPosition = commentEndPosition + "-->".Length - 1;
+                        searchTagStartPosition = commentEndPosition + CommentEnd.Length - 1;
                         tagEndPosition = searchTagStartPosition;
                     }
                     else if (tagIsCdataStart)
                     {
                         //Find CDATA end
-                        int cdataEndPosition = markup.IndexOf("]]>", cdataBeginPosition);
+                        int cdataEndPosition = markup.IndexOf(CdataEnd, cdataBeginPosition, StringComparison.Ordinal);
                         if (cdataEndPosition == -1)
                         {
                             if (ParseSettings.AbortOnError)
                                 throw new QuasiXmlException("Missing CDATA end token.", GetLineNumber(markup, cdataBeginPosition));
                             else
                             {
-                                searchTagStartPosition = cdataBeginPosition + 1; //Recover by ignoring  this CDATA start
+                                searchTagStartPosition = cdataBeginPosition + 1; //Recover by ignoring this CDATA start
                                 tagEndPosition = searchTagStartPosition;
                                 continue;
                             }
                         }
 
-                        string cdata = markup.Substring(cdataBeginPosition + "<![CDATA[".Length, cdataEndPosition - (cdataBeginPosition + "<![CDATA[".Length));
+                        string cdata = markup.Substring(cdataBeginPosition + CdataStart.Length, cdataEndPosition - (cdataBeginPosition + CdataStart.Length));
                         openNodes[openNodes.Count - 1].Item1.Children.Add(new QuasiXmlNode() { NodeType = QuasiXmlNodeType.CDATA, Name = null, Value = cdata });
-                        searchTagStartPosition = cdataEndPosition + "]]>".Length - 1;
+                        searchTagStartPosition = cdataEndPosition + CdataEnd.Length - 1;
                         tagEndPosition = searchTagStartPosition;
                     }
 
@@ -493,21 +509,20 @@ namespace QuasiXml
                             markupBuilder.Append(currentLevelIndent);
                             _isLineIndented = true;
                         }
-                        markupBuilder.Append("<![CDATA[");
+                        markupBuilder.Append(CdataStart);
                         markupBuilder.Append(node.Value);
-                        markupBuilder.Append("]]>");
+                        markupBuilder.Append(CdataEnd);
                         break;
 
                     case QuasiXmlNodeType.Comment:
                         if (!_isLineIndented)
                         {
-          
                             markupBuilder.Append(currentLevelIndent);
                             _isLineIndented = true;
                         }
-                        markupBuilder.Append("<!--");
+                        markupBuilder.Append(CommentStart);
                         markupBuilder.Append(node.Value);
-                        markupBuilder.Append("-->");
+                        markupBuilder.Append(CommentEnd);
                         break;
                 }
             }
@@ -538,18 +553,29 @@ namespace QuasiXml
         private void OnChildrenChanged(object sender, NotifyCollectionChangedEventArgs e)
         {
             if (e.NewItems != null)
-            {
                 foreach (QuasiXmlNode newNode in e.NewItems)
                     newNode.Parent = this;
-            }
         }
 
         private string ExtractName(string markup, int startTagBeginPosition)
         {
-            int tagNameStartPosition = markup.IndexOf<char>((c => !char.IsWhiteSpace(c)), startTagBeginPosition + 1); //Find first non-whitespace char after startTagBeginPosition + 1's index
-            int tagNameEndPosition = markup.IndexOf(" ", tagNameStartPosition) > 0 && markup.IndexOf(" ", tagNameStartPosition) < markup.IndexOf(">", startTagBeginPosition) 
-                ? markup.IndexOf(" ", tagNameStartPosition) 
-                : markup.IndexOf(">", startTagBeginPosition);
+            //Tag name start is first non-whitespace char after startTagBeginPosition + 1's index
+            int tagNameStartPosition = -1;
+            int tagNameEndPosition = -1;
+
+            for (int i = startTagBeginPosition + 1; i < markup.Length; i++)
+                if (!char.IsWhiteSpace(markup[i]))
+                {
+                    tagNameStartPosition = i;
+                    break;
+                }
+
+            for (int i = tagNameStartPosition; i < markup.Length; i++)
+                if (markup[i] == '>' || char.IsWhiteSpace(markup[i]))
+                {
+                    tagNameEndPosition = i;
+                    break;
+                }
 
             return markup.Substring(tagNameStartPosition, tagNameEndPosition - tagNameStartPosition);
         }
@@ -560,7 +586,7 @@ namespace QuasiXml
             string startTagContent = markup.Substring(startTagBeginPosition, (startTagEndPosition - startTagBeginPosition) + 1);
             startTagContent = startTagContent.Trim().TrimStart('<').TrimEnd('>').TrimEnd('/').Trim();
 
-            if (!startTagContent.Contains(' '))
+            if (startTagContent.IndexOf(' ') == -1)
                 return result;
 
             startTagContent = startTagContent.Substring(startTagContent.Split(new char[] { ' ' })[0].Length).Trim(); //Get rid of the tag name
@@ -577,11 +603,11 @@ namespace QuasiXml
 
                 startTagContent = startTagContent.Substring(equalsCharPosition + 1, (startTagContent.Length - equalsCharPosition) - 1).TrimStart(); //Cut 
 
-                string valueWrapper = startTagContent[0].ToString();
-                if (valueWrapper != '"'.ToString() && valueWrapper != "'")
+                char valueWrapper = startTagContent[0];
+                if (valueWrapper != '"' && valueWrapper != '\'')
                     break;
 
-                int valueEndPostition = startTagContent.IndexOf(valueWrapper[0], 1);
+                int valueEndPostition = startTagContent.IndexOf(valueWrapper, 1);
                 if (valueEndPostition == -1)
                     break;
 
@@ -603,7 +629,7 @@ namespace QuasiXml
                 if (ParseSettings.NormalizeAttributeValueWhitespaces)
                 {
                     string currentAttributeValue = attributeComponents[i + 1].Trim();
-                    currentAttributeValue = Regex.Replace(currentAttributeValue, @"\s+", " ");
+                    currentAttributeValue = Regex.Replace(currentAttributeValue, @"\s+", " ", RegexOptions.Compiled);
                     result.Add(attributeComponents[i].Trim().Trim('=').Trim(), currentAttributeValue);
                 }
                 else
@@ -620,7 +646,7 @@ namespace QuasiXml
 
             while (currentIndex < index)
             {
-                int i = markup.IndexOf(Environment.NewLine, currentIndex, (index - currentIndex) + 1);
+                int i = markup.IndexOf(Environment.NewLine, currentIndex, (index - currentIndex) + 1, StringComparison.Ordinal);
 
                 if (i != -1)
                 {

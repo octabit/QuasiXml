@@ -6,8 +6,8 @@
     <ProjectGuid>{2C7C512A-DF29-411C-BF4A-E999B27035C2}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>ProtoXMLTest</RootNamespace>
-    <AssemblyName>LeanTagsTest</AssemblyName>
+    <RootNamespace>QuasiXmlTest</RootNamespace>
+    <AssemblyName>QuasiXmlTest</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <ProjectTypeGuids>{3AC096D0-A1C2-E12C-1390-A8335801FDAB};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>

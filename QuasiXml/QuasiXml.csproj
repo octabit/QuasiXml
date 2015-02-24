@@ -45,7 +45,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="QuasiXmlExtensions.cs" />
     <Compile Include="QuasiXmlNode.cs" />
     <Compile Include="QuasiXmlNodeCollection.cs" />
     <Compile Include="QuasiXmlNodeType.cs" />
