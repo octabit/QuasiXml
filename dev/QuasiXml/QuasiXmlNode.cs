@@ -395,24 +395,16 @@ namespace QuasiXml
 
             if (openNodes.Count > 0)
             {
-                if (ParseSettings.AutoCloseOpenTags == false)
-                    if (ParseSettings.AbortOnError == true)
+               if (ParseSettings.AbortOnError == true)
                         throw new QuasiXmlException("Missing end tag.");
-                    else
-                    {
-                        List<Tuple<QuasiXmlNode, int>> nodesToRemove = new List<Tuple<QuasiXmlNode,int>>();
-                        foreach (Tuple<QuasiXmlNode, int> openNode in openNodes)
-                        {
-                            this.Children.Remove(openNode.Item1);
-                            nodesToRemove.Add(openNode);
-                        }
 
-                        foreach (Tuple<QuasiXmlNode, int> openNode in nodesToRemove)
-                            openNodes.Remove(openNode);
-                    }
-                else
-                    throw new NotImplementedException("Auto closing of open tags not yet supported.");
-                    //TODO: auto close
+               if (ParseSettings.AutoCloseOpenTags == false)
+               {
+                   foreach (Tuple<QuasiXmlNode, int> openNode in openNodes)
+                       openNode.Item1.Parent.Children.Remove(openNode.Item1);
+               }
+
+               openNodes.Clear();
             }
         }
 

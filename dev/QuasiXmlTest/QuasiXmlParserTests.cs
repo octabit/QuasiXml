@@ -213,6 +213,26 @@ namespace QuasiXmlTest
             Assert.AreEqual(QuasiXmlNodeType.Element, root.NodeType);
             Assert.AreEqual(0, root.Children.Count);
         }
+
+        [TestMethod]
+        public void TestCanAutoCloseOpenTags()
+        {
+            //Arrange
+            string markup =
+            @"<root><two><one>text</two></root>";
+
+            string expected =
+            @"<root><two><one>text</one></two></root>";
+
+            //Act
+            QuasiXmlNode root = new QuasiXmlNode();
+            root.ParseSettings.AbortOnError = false;
+            root.ParseSettings.AutoCloseOpenTags = true;
+            root.OuterMarkup = markup;
+
+            //Assert
+            Assert.AreEqual(expected, root.OuterMarkup);
+        }
         
         [TestMethod]
         [ExpectedException(typeof(QuasiXmlException))]
@@ -340,5 +360,7 @@ namespace QuasiXmlTest
             Assert.AreEqual(1, root.Children[0].Children.Count);
             Assert.AreEqual(QuasiXmlNodeType.Text, root.Children[0].Children[0].NodeType);
         }
+
+
     }
 }
