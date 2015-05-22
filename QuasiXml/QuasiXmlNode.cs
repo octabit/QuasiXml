@@ -399,10 +399,8 @@ namespace QuasiXml
                         throw new QuasiXmlException("Missing end tag.");
 
                if (ParseSettings.AutoCloseOpenTags == false)
-               {
                    foreach (Tuple<QuasiXmlNode, int> openNode in openNodes)
                        openNode.Item1.Parent.Children.Remove(openNode.Item1);
-               }
 
                openNodes.Clear();
             }
