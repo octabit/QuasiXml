@@ -27,12 +27,14 @@ using System.Collections.Specialized;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 
 namespace QuasiXml
 {
     public class QuasiXmlNode
     {
         private bool _isLineIndented = false;
+        private const string XmlDeclaration = "?xml";
         private const string CdataStart = "<![CDATA[";
         private const string CdataEnd = "]]>";
         private const string CommentStart = "<!--";
@@ -85,7 +87,7 @@ namespace QuasiXml
                 if (Parent == null)
                     return null;
 
-                QuasiXmlNodeCollection ascendants = new QuasiXmlNodeCollection();
+                var ascendants = new QuasiXmlNodeCollection();
                 ascendants.Add(Parent);
 
                 if(Parent.Ascendants != null)
@@ -102,7 +104,7 @@ namespace QuasiXml
         {
             get
             {
-                QuasiXmlNodeCollection descendants = new QuasiXmlNodeCollection();
+                var descendants = new QuasiXmlNodeCollection();
                 descendants.AddRange(Children);
 
                 foreach (QuasiXmlNode node in Children)
@@ -124,7 +126,7 @@ namespace QuasiXml
             }
             set
             {
-                QuasiXmlNode root = new QuasiXmlNode();
+                var root = new QuasiXmlNode();
                 root.Parse("<root>" + value + "</root>");
                 this.Children = root.Children;
             }
@@ -153,7 +155,7 @@ namespace QuasiXml
         {
             get
             {
-                StringBuilder innerTextBuilder = new StringBuilder();
+                var innerTextBuilder = new StringBuilder();
 
                 foreach (QuasiXmlNode node in Children)
                 {
@@ -219,7 +221,7 @@ namespace QuasiXml
         {
             bool isRoot = true;
             QuasiXmlNode currentTag = null;
-            List<Tuple<QuasiXmlNode, int>> openNodes = new List<Tuple<QuasiXmlNode, int>>(); //Node, End position of the nodes tag
+            var openNodes = new List<Tuple<QuasiXmlNode, int>>(); //Node, End position of the nodes tag
 
             int lastSearchTagStartPosition = 0;
             int searchTagStartPosition = 0;
@@ -306,6 +308,8 @@ namespace QuasiXml
                             continue;
                         }
 
+                        string name = ExtractName(markup, tagBeginPosition);
+
                         if (isRoot == false)
                         {
                             currentTag.Children.Add(new QuasiXmlNode());
@@ -313,6 +317,9 @@ namespace QuasiXml
                         }
                         else
                         {
+                            if (name.Equals(XmlDeclaration, StringComparison.OrdinalIgnoreCase))
+                                continue;
+
                             currentTag = this;
                             isRoot = false;
                         }
@@ -320,7 +327,7 @@ namespace QuasiXml
                         if (openNodes.Count > 0)
                             currentTag.Parent = openNodes.Last().Item1;
                         currentTag.NodeType = QuasiXmlNodeType.Element;
-                        currentTag.Name = ExtractName(markup, tagBeginPosition);
+                        currentTag.Name = name;
                         currentTag.Attributes = ExtractAttributes(markup, tagBeginPosition, tagEndPosition);
                         currentTag.IsSelfClosing = isSelfClosingTag;
 
@@ -400,7 +407,8 @@ namespace QuasiXml
 
                if (ParseSettings.AutoCloseOpenTags == false)
                    foreach (Tuple<QuasiXmlNode, int> openNode in openNodes)
-                       openNode.Item1.Parent.Children.Remove(openNode.Item1);
+                       if (openNode.Item1.Parent != null)
+                           openNode.Item1.Parent.Children.Remove(openNode.Item1);
 
                openNodes.Clear();
             }
@@ -422,7 +430,7 @@ namespace QuasiXml
                 lineEnd = Environment.NewLine;
             }
             
-            StringBuilder markupBuilder = new StringBuilder();
+            var markupBuilder = new StringBuilder();
 
             if (includeRoot)
             {
@@ -572,7 +580,7 @@ namespace QuasiXml
 
         private Dictionary<string, string> ExtractAttributes(string markup, int startTagBeginPosition, int startTagEndPosition)
         {
-            Dictionary<string, string> result = new Dictionary<string, string>();
+            var result = new Dictionary<string, string>();
             string startTagContent = markup.Substring(startTagBeginPosition, (startTagEndPosition - startTagBeginPosition) + 1);
             startTagContent = startTagContent.Trim().TrimStart('<').TrimEnd('>').TrimEnd('/').Trim();
 
@@ -581,7 +589,7 @@ namespace QuasiXml
 
             startTagContent = startTagContent.Substring(startTagContent.Split(new char[] { ' ' })[0].Length).Trim(); //Get rid of the tag name
 
-            List<string> attributeComponents = new List<string>();
+            var attributeComponents = new List<string>();
 
             while (true)
             {
