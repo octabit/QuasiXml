@@ -27,12 +27,14 @@ using System.Collections.Specialized;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 
 namespace QuasiXml
 {
     public class QuasiXmlNode
     {
         private bool _isLineIndented = false;
+        private const string XmlDeclaration = "?xml";
         private const string CdataStart = "<![CDATA[";
         private const string CdataEnd = "]]>";
         private const string CommentStart = "<!--";
@@ -306,6 +308,8 @@ namespace QuasiXml
                             continue;
                         }
 
+                        string name = ExtractName(markup, tagBeginPosition);
+
                         if (isRoot == false)
                         {
                             currentTag.Children.Add(new QuasiXmlNode());
@@ -313,6 +317,9 @@ namespace QuasiXml
                         }
                         else
                         {
+                            if (name.Equals(XmlDeclaration, StringComparison.OrdinalIgnoreCase))
+                                continue;
+
                             currentTag = this;
                             isRoot = false;
                         }
@@ -320,7 +327,7 @@ namespace QuasiXml
                         if (openNodes.Count > 0)
                             currentTag.Parent = openNodes.Last().Item1;
                         currentTag.NodeType = QuasiXmlNodeType.Element;
-                        currentTag.Name = ExtractName(markup, tagBeginPosition);
+                        currentTag.Name = name;
                         currentTag.Attributes = ExtractAttributes(markup, tagBeginPosition, tagEndPosition);
                         currentTag.IsSelfClosing = isSelfClosingTag;
 
@@ -400,7 +407,8 @@ namespace QuasiXml
 
                if (ParseSettings.AutoCloseOpenTags == false)
                    foreach (Tuple<QuasiXmlNode, int> openNode in openNodes)
-                       openNode.Item1.Parent.Children.Remove(openNode.Item1);
+                       if (openNode.Item1.Parent != null)
+                           openNode.Item1.Parent.Children.Remove(openNode.Item1);
 
                openNodes.Clear();
             }
