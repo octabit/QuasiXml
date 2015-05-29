@@ -361,6 +361,21 @@ namespace QuasiXmlTest
             Assert.AreEqual(QuasiXmlNodeType.Text, root.Children[0].Children[0].NodeType);
         }
 
+        [TestMethod]
+        public void TestCanHandleXmlDeclaration()
+        {
+            //Arrange
+            string markup =
+            @"<?xml version=""1.0"" encoding=""utf-8""?><root><one>text</one></root>";
 
+            //Act
+            QuasiXmlNode root = new QuasiXmlNode();
+            root.ParseSettings.AutoCloseOpenTags = true;
+            root.OuterMarkup = markup;
+
+            //Assert
+            Assert.IsInstanceOfType(root, typeof(QuasiXmlNode));
+            Assert.AreEqual("root", root.Name);
+        }
     }
 }
