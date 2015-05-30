@@ -257,7 +257,7 @@ namespace QuasiXml
                         if ((tagBeginPosition - 1) - tagEndPosition >= 0)
                             value = markup.Substring(tagEndPosition + 1, (tagBeginPosition - 1) - tagEndPosition); //Do not include start and end tag in value
                         if (!string.IsNullOrWhiteSpace(value))
-                            openNodes[openNodes.Count - 1].Item1.Children.Add(new QuasiXmlNode() { NodeType = QuasiXmlNodeType.Text, Name = null, Value = value });
+                            openNodes[openNodes.Count - 1].Item1.Children.Add(new QuasiXmlNode() { NodeType = QuasiXmlNodeType.Text, Name = null, Value = value, RenderSettings = openNodes.First().Item1.RenderSettings });
                     }
 
                     if (tagBeginPosition != -1 && tagIsCommentStart == false && tagIsCdataStart == false)
@@ -312,7 +312,7 @@ namespace QuasiXml
 
                         if (isRoot == false)
                         {
-                            currentTag.Children.Add(new QuasiXmlNode());
+                            currentTag.Children.Add(new QuasiXmlNode() { RenderSettings = openNodes.First().Item1.RenderSettings });
                             currentTag = currentTag.Children[currentTag.Children.Count - 1];
                         }
                         else
@@ -362,7 +362,7 @@ namespace QuasiXml
                         }
 
                         string comment = markup.Substring(commentBeginPosition + CommentStart.Length, commentEndPosition - (commentBeginPosition + CommentStart.Length));
-                        openNodes[openNodes.Count - 1].Item1.Children.Add(new QuasiXmlNode() { NodeType = QuasiXmlNodeType.Comment, Name = null, Value = comment });
+                        openNodes[openNodes.Count - 1].Item1.Children.Add(new QuasiXmlNode() { NodeType = QuasiXmlNodeType.Comment, Name = null, Value = comment, RenderSettings = openNodes.First().Item1.RenderSettings });
                         searchTagStartPosition = commentEndPosition + CommentEnd.Length - 1;
                         tagEndPosition = searchTagStartPosition;
                     }
@@ -383,7 +383,7 @@ namespace QuasiXml
                         }
 
                         string cdata = markup.Substring(cdataBeginPosition + CdataStart.Length, cdataEndPosition - (cdataBeginPosition + CdataStart.Length));
-                        openNodes[openNodes.Count - 1].Item1.Children.Add(new QuasiXmlNode() { NodeType = QuasiXmlNodeType.CDATA, Name = null, Value = cdata });
+                        openNodes[openNodes.Count - 1].Item1.Children.Add(new QuasiXmlNode() { NodeType = QuasiXmlNodeType.CDATA, Name = null, Value = cdata, RenderSettings = openNodes.First().Item1.RenderSettings });
                         searchTagStartPosition = cdataEndPosition + CdataEnd.Length - 1;
                         tagEndPosition = searchTagStartPosition;
                     }
@@ -459,7 +459,7 @@ namespace QuasiXml
                             markupBuilder.Append('"');
                         }
 
-                        if (node.IsSelfClosing)
+                        if (node.IsSelfClosing || (this.RenderSettings.RenderEmptyElementsAsSelfClosing && !node.Children.Any()))
                         {
                             markupBuilder.Append(" />");
                             markupBuilder.Append(lineEnd);
@@ -468,7 +468,8 @@ namespace QuasiXml
                         else
                         {
                             markupBuilder.Append('>');
-                            markupBuilder.Append(lineEnd);
+                            if (!(node.Children.FirstOrDefault(n => n.NodeType == QuasiXmlNodeType.Text) != null && node.Children.First().Value.StartsWith(lineEnd)))
+                                markupBuilder.Append(lineEnd);
                             _isLineIndented = false;
 
                             foreach (QuasiXmlNode child in node.Children)
@@ -495,7 +496,12 @@ namespace QuasiXml
                     case QuasiXmlNodeType.Text:
                         if(!_isLineIndented)
                         {
-                            markupBuilder.Append(currentLevelIndent);
+                            if (!node.Value.StartsWith(lineEnd + currentLevelIndent))
+                                markupBuilder.Append(currentLevelIndent);
+                            else
+                                if (node.Ascendants.LastOrDefault() != null && node.RenderSettings.AutoIndentMarkup)
+                                    node.Value = node.Value.TrimEnd(lineEnd.ToCharArray().Concat(currentLevelIndent.ToCharArray()).ToArray());
+
                             _isLineIndented = true;
                         }
                         markupBuilder.Append(node.Value);
