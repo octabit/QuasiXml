@@ -459,7 +459,7 @@ namespace QuasiXml
                             markupBuilder.Append('"');
                         }
 
-                        if (node.IsSelfClosing)
+                        if (node.IsSelfClosing || !node.Children.Any())
                         {
                             markupBuilder.Append(" />");
                             markupBuilder.Append(lineEnd);
