@@ -81,6 +81,65 @@ namespace QuasiXmlTest
         }
 
         [TestMethod]
+        public void TestCanRenderMarkupWithIndentationWhenSourceAlreadyIsIndented()
+        {
+            //Arrange
+            string markup = "<root>" + Environment.NewLine +
+                 "    " + "<element>" + Environment.NewLine +
+                 "    " + "    " + "<![CDATA[character data]]>this is a text<!-- this is a comment -->" + Environment.NewLine +
+                 "    " + "    " + "<subelement>" + Environment.NewLine +
+                 "    " + "    " + "    " + "more text" + Environment.NewLine +
+                 "    " + "    " + "</subelement>" + Environment.NewLine +
+                 "    " + "</element>" + Environment.NewLine +
+                 "</root>" + Environment.NewLine;
+
+            QuasiXmlNode root = new QuasiXmlNode(new QuasiXmlRenderSettings() { AutoIndentMarkup = true, IndentCharacter = ' ', IndentNumberOfChars = 4 });
+            root.OuterMarkup = markup;
+
+            //Act
+            var result = root.OuterMarkup;
+
+            //Assert
+            string control = "<root>" + Environment.NewLine +
+                             "    " + "<element>" + Environment.NewLine +
+                             "    " + "    " + "<![CDATA[character data]]>this is a text<!-- this is a comment -->" + Environment.NewLine +
+                             "    " + "    " + "<subelement>" + Environment.NewLine +
+                             "    " + "    " + "    " + "more text" + Environment.NewLine +
+                             "    " + "    " + "</subelement>" + Environment.NewLine +
+                             "    " + "</element>" + Environment.NewLine +
+                             "</root>" + Environment.NewLine;
+
+            Assert.AreEqual(control, result);
+        }
+
+        [TestMethod]
+        public void TestCanRenderMarkupWithoutIndentationWhenSourceAlreadyIsIndented()
+        {
+            //Arrange
+            string markup = "<root>" + Environment.NewLine +
+                 "    " + "<element>" + Environment.NewLine +
+                 "    " + "    " + "<![CDATA[character data]]>this is a text<!-- this is a comment -->" + Environment.NewLine +
+                 "    " + "    " + "<subelement>" + Environment.NewLine +
+                 "    " + "    " + "    " + "more text" + Environment.NewLine +
+                 "    " + "    " + "</subelement>" + Environment.NewLine +
+                 "    " + "</element>" + Environment.NewLine +
+                 "</root>" + Environment.NewLine;
+
+            QuasiXmlNode root = new QuasiXmlNode(new QuasiXmlRenderSettings() { AutoIndentMarkup = false, IndentCharacter = ' ', IndentNumberOfChars = 4 });
+            root.OuterMarkup = markup;
+
+            //Act
+            var result = root.OuterMarkup;
+
+            //Assert
+            string control = "<root><element><![CDATA[character data]]>this is a text<!-- this is a comment --><subelement>" +
+                Environment.NewLine + "    " + "    " + "    " + "more text" + Environment.NewLine +
+                 "    " + "    " + "</subelement></element></root>";
+
+            Assert.AreEqual(control, result);
+        }
+
+        [TestMethod]
         public void TestCanRenderMarkupWithoutIndentation()
         {
             //Arrange
@@ -93,6 +152,23 @@ namespace QuasiXmlTest
 
             //Assert
             Assert.AreEqual(markup, result);
+        }
+
+        [TestMethod]
+        public void TestCanRenderEmptyNodeAsSelfClosing()
+        {
+            //Arrange
+            string markup = "<root><element></element></root>";
+            QuasiXmlNode root = new QuasiXmlNode();
+            root.RenderSettings.RenderEmptyElementsAsSelfClosing = true;
+            root.OuterMarkup = markup;
+
+            //Act
+            var result = root.OuterMarkup;
+
+            //Assert
+            string control = "<root><element /></root>";
+            Assert.AreEqual(control, result);
         }
     }
 }
