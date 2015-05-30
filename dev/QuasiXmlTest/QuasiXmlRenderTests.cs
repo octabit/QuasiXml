@@ -94,5 +94,22 @@ namespace QuasiXmlTest
             //Assert
             Assert.AreEqual(markup, result);
         }
+
+        [TestMethod]
+        public void TestCanRenderEmptyNodeAsSelfClosing()
+        {
+            //Arrange
+            string markup = "<root><element></element></root>";
+            QuasiXmlNode root = new QuasiXmlNode();
+            root.RenderSettings.RenderEmptyElementsAsSelfClosing = true;
+            root.OuterMarkup = markup;
+
+            //Act
+            var result = root.OuterMarkup;
+
+            //Assert
+            string control = "<root><element /></root>";
+            Assert.AreEqual(control, result);
+        }
     }
 }

@@ -26,6 +26,7 @@ namespace QuasiXml
     public class QuasiXmlRenderSettings
     {
         public bool AutoIndentMarkup { get; set; }
+        public bool RenderEmptyElementsAsSelfClosing { get; set; }
         public char IndentCharacter { get; set; }
         public int IndentNumberOfChars { get; set; }
 
@@ -34,13 +35,15 @@ namespace QuasiXml
             AutoIndentMarkup = false;
             IndentCharacter = '\t';
             IndentNumberOfChars = 1;
+            RenderEmptyElementsAsSelfClosing = false;
         }
 
-        public QuasiXmlRenderSettings(bool autoIndentMarkup, char indentCharacter, int indentNumberOfChars)
+        public QuasiXmlRenderSettings(bool autoIndentMarkup, char indentCharacter, int indentNumberOfChars, bool renderEmptyElementsAsSelfClosing)
         {
             AutoIndentMarkup = autoIndentMarkup;
             IndentCharacter = indentCharacter;
             IndentNumberOfChars = indentNumberOfChars;
+            RenderEmptyElementsAsSelfClosing = renderEmptyElementsAsSelfClosing;
         }
     }
 }
