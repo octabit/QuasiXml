@@ -499,7 +499,6 @@ namespace QuasiXml
                             if (!node.Value.StartsWith(lineEnd + currentLevelIndent))
                                 markupBuilder.Append(currentLevelIndent);
                             else
-                                //if (node.Ascendants.LastOrDefault() != null && node.Ascendants.Last().RenderSettings.AutoIndentMarkup)
                                 if (node.Ascendants.LastOrDefault() != null && node.RenderSettings.AutoIndentMarkup)
                                     node.Value = node.Value.TrimEnd(lineEnd.ToCharArray().Concat(currentLevelIndent.ToCharArray()).ToArray());
 
