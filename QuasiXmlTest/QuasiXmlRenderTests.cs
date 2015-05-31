@@ -75,9 +75,24 @@ namespace QuasiXmlTest
                              "    " + "    " + "    " + "more text" + Environment.NewLine +
                              "    " + "    " + "</subelement>" + Environment.NewLine +
                              "    " + "</element>" + Environment.NewLine +
-                             "</root>" + Environment.NewLine;
+                             "</root>";
 
             Assert.AreEqual(control, result);
+        }
+
+        [TestMethod]
+        public void TestCanRenderMarkupWithoutIndentation()
+        {
+            //Arrange
+            string markup = "<root><element><![CDATA[character data]]>this is a text<!-- this is a comment --><subelement>more text</subelement></element></root>";
+            QuasiXmlNode root = new QuasiXmlNode();
+            root.OuterMarkup = markup;
+
+            //Act
+            var result = root.OuterMarkup;
+
+            //Assert
+            Assert.AreEqual(markup, result);
         }
 
         [TestMethod]
@@ -107,7 +122,7 @@ namespace QuasiXmlTest
                              "    " + "    " + "    " + "more text" + Environment.NewLine +
                              "    " + "    " + "</subelement>" + Environment.NewLine +
                              "    " + "</element>" + Environment.NewLine +
-                             "</root>" + Environment.NewLine;
+                             "</root>";
 
             Assert.AreEqual(control, result);
         }
@@ -140,28 +155,29 @@ namespace QuasiXmlTest
         }
 
         [TestMethod]
-        public void TestCanRenderMarkupWithoutIndentation()
+        public void TestCanRenderEmptyNodeAsSelfClosing()
         {
             //Arrange
-            string markup = "<root><element><![CDATA[character data]]>this is a text<!-- this is a comment --><subelement>more text</subelement></element></root>";
-            QuasiXmlNode root = new QuasiXmlNode();
+            string markup = "<root><element></element></root>";
+            QuasiXmlNode root = new QuasiXmlNode(new QuasiXmlRenderSettings() { RenderEmptyElementsAsSelfClosing = true });
             root.OuterMarkup = markup;
 
             //Act
             var result = root.OuterMarkup;
 
             //Assert
-            Assert.AreEqual(markup, result);
+            string control = "<root><element /></root>";
+            Assert.AreEqual(control, result);
         }
 
         [TestMethod]
-        public void TestCanRenderEmptyNodeAsSelfClosing()
+        public void TestCanRenderTextNodeWithNullValue()
         {
             //Arrange
-            string markup = "<root><element></element></root>";
-            QuasiXmlNode root = new QuasiXmlNode();
-            root.RenderSettings.RenderEmptyElementsAsSelfClosing = true;
-            root.OuterMarkup = markup;
+            QuasiXmlNode root = new QuasiXmlNode(new QuasiXmlRenderSettings() { AutoIndentMarkup = false, RenderEmptyElementsAsSelfClosing = true }) { Name = "root" };
+            QuasiXmlNode element = new QuasiXmlNode() { Name = "element" };
+            element.Children.Add(new QuasiXmlNode() { NodeType = QuasiXmlNodeType.Text, Value = null });
+            root.Children.Add(element);
 
             //Act
             var result = root.OuterMarkup;

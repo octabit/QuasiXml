@@ -459,7 +459,11 @@ namespace QuasiXml
                             markupBuilder.Append('"');
                         }
 
-                        if (node.IsSelfClosing || (this.RenderSettings.RenderEmptyElementsAsSelfClosing && !node.Children.Any()))
+                        if (node.IsSelfClosing 
+                            || (this.RenderSettings.RenderEmptyElementsAsSelfClosing 
+                                && (!node.Children.Any() || (node.Children.Any() 
+                                && node.Children.First().NodeType == QuasiXmlNodeType.Text 
+                                && node.Children.First().Value == null))))
                         {
                             markupBuilder.Append(" />");
                             markupBuilder.Append(lineEnd);
@@ -468,8 +472,12 @@ namespace QuasiXml
                         else
                         {
                             markupBuilder.Append('>');
-                            if (!(node.Children.FirstOrDefault(n => n.NodeType == QuasiXmlNodeType.Text) != null && node.Children.First().Value.StartsWith(lineEnd)))
+                            if (!(node.Children.FirstOrDefault(n => n.NodeType == QuasiXmlNodeType.Text) != null
+                                && (node.Children.First().Value == null
+                                || node.Children.First().Value.StartsWith(lineEnd))))
+                            {
                                 markupBuilder.Append(lineEnd);
+                            }
                             _isLineIndented = false;
 
                             foreach (QuasiXmlNode child in node.Children)
@@ -496,10 +504,10 @@ namespace QuasiXml
                     case QuasiXmlNodeType.Text:
                         if(!_isLineIndented)
                         {
-                            if (!node.Value.StartsWith(lineEnd + currentLevelIndent))
+                            if (node.Value == null || !node.Value.StartsWith(lineEnd + currentLevelIndent))
                                 markupBuilder.Append(currentLevelIndent);
                             else
-                                if (node.Ascendants.LastOrDefault() != null && node.RenderSettings.AutoIndentMarkup)
+                                if (node.RenderSettings.AutoIndentMarkup && node.Value != null)
                                     node.Value = node.Value.TrimEnd(lineEnd.ToCharArray().Concat(currentLevelIndent.ToCharArray()).ToArray());
 
                             _isLineIndented = true;
@@ -535,6 +543,9 @@ namespace QuasiXml
                 foreach (QuasiXmlNode child in node.Children)
                     markupBuilder.Append(Render(child, true, level + 1));
             }
+
+            if (level == 0)
+                return markupBuilder.ToString().TrimEnd();
 
             return markupBuilder.ToString();
         }
