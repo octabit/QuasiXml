@@ -27,7 +27,6 @@ using System.Collections.Specialized;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 
 namespace QuasiXml
 {
@@ -185,14 +184,14 @@ namespace QuasiXml
         {
             get
             {
-                if (this.Children.FirstOrDefault(n => n.Name == name) != null)
-                    return this.Children.Single(c => c.Name == name);
+                if (this.Children.FirstOrDefault(n => n.Name.Equals(name, StringComparison.Ordinal)) != null)
+                    return this.Children.Single(c => c.Name.Equals(name, StringComparison.Ordinal));
 
                 return null;
             }
             set
             {
-                QuasiXmlNode node = this.Children.Single(c => c.Name == name);
+                QuasiXmlNode node = this.Children.Single(c => c.Name.Equals(name, StringComparison.Ordinal));
                 node = value;
             }
         }
@@ -302,7 +301,7 @@ namespace QuasiXml
 
                             //Remove the last occurance of the current node type:
                             for (int i = openNodes.Count; i > 0; i--)
-                                if (openNodes[i - 1].Item1.Name == tag.Name)
+                                if (openNodes[i - 1].Item1.Name.Equals(tag.Name, StringComparison.Ordinal))
                                     openNodes.RemoveAt(i - 1);
 
                             if (initialNumberOfOpenTags == openNodes.Count)
@@ -659,10 +658,10 @@ namespace QuasiXml
                 {
                     string currentAttributeValue = attributeComponents[i + 1];
                     currentAttributeValue = Regex.Replace(currentAttributeValue, @"\s+", " ", RegexOptions.Compiled);
-                    result.Add(attributeComponents[i].Trim(new char[] { ' ', '\t', '=' }), currentAttributeValue);
+                    result.Add(attributeComponents[i].Trim(new char[] { ' ', '\t', '=' }), currentAttributeValue.Trim());
                 }
                 else
-                    result.Add(attributeComponents[i].Trim(new char[]{' ','\t', '='}), attributeComponents[i + 1].Trim());
+                    result.Add(attributeComponents[i].Trim(new char[]{' ','\t', '='}), attributeComponents[i + 1]);
             }
 
             return result;
