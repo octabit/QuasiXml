@@ -40,7 +40,7 @@ namespace QuasiXml
         private const string CommentStart = "<!--";
         private const string CommentEnd = "-->";
 
-        private struct Tag
+        private class Tag
         {
             public string Name;
             public Dictionary<string, string> Attributes;
@@ -290,11 +290,12 @@ namespace QuasiXml
                             lastSearchTagStartPosition = tagBeginPosition - 1;
                         }
 
+                        string tagString = markup.Substring(tagBeginPosition, (tagEndPosition - tagBeginPosition) + 1); //e.g. "<tag attribute='test'>"
                         bool isEndTag = markup[tagBeginPosition + 1] == '/'; //TODO: What if tag contains whitespace before  '/'
-                        bool isSelfClosingTag = markup.Substring(tagBeginPosition, (tagEndPosition - tagBeginPosition) + 1).Replace(" ", string.Empty).Contains("/>");
+                        bool isSelfClosingTag = tagString.Replace(" ", string.Empty).EndsWith("/>", StringComparison.Ordinal);
                         searchTagStartPosition = tagEndPosition + 1;
 
-                        Tag tag = ExtractTagParts(markup, isEndTag ? tagBeginPosition + 1: tagBeginPosition);
+                        Tag tag = ExtractTagParts(tagString);
 
                         if (isEndTag)
                         {
@@ -480,7 +481,7 @@ namespace QuasiXml
                             markupBuilder.Append('>');
                             if (!(node.Children.FirstOrDefault(n => n.NodeType == QuasiXmlNodeType.Text) != null
                                 && (node.Children.First().Value == null
-                                || node.Children.First().Value.StartsWith(lineEnd))))
+                                || node.Children.First().Value.StartsWith(lineEnd, StringComparison.Ordinal))))
                             {
                                 markupBuilder.Append(lineEnd);
                             }
@@ -510,7 +511,7 @@ namespace QuasiXml
                     case QuasiXmlNodeType.Text:
                         if(!_isLineIndented)
                         {
-                            if (node.Value == null || !node.Value.StartsWith(lineEnd + currentLevelIndent))
+                            if (node.Value == null || !node.Value.StartsWith(lineEnd + currentLevelIndent, StringComparison.Ordinal))
                                 markupBuilder.Append(currentLevelIndent);
                             else
                                 if (node.RenderSettings.AutoIndentMarkup && node.Value != null)
@@ -578,7 +579,7 @@ namespace QuasiXml
                     newNode.Parent = this;
         }
 
-        private Tag ExtractTagParts(string markup, int startTagBeginPosition)
+        private Tag ExtractTagParts(string tag)
         {
             int tagNameStartPosition = -1;
             int tagNameEndPosition = -1;
@@ -586,21 +587,21 @@ namespace QuasiXml
             int attributesEndPosition = -1;
 
             //Tag name start is first non-whitespace char after startTagBeginPosition + 1's index
-            for (int i = startTagBeginPosition + 1; i < markup.Length; i++)
-                if (!char.IsWhiteSpace(markup[i]))
+            for (int i = 1; i < tag.Length; i++)
+                if (!char.IsWhiteSpace(tag[i]) && tag[i] != '/')
                 {
                     tagNameStartPosition = i;
                     break;
                 }
 
-            for (int i = tagNameStartPosition; i < markup.Length; i++)
+            for (int i = tagNameStartPosition; i < tag.Length; i++)
             {
-                if (char.IsWhiteSpace(markup[i]) && tagNameEndPosition == -1)
+                if (char.IsWhiteSpace(tag[i]) && tagNameEndPosition == -1)
                 {
                     tagNameEndPosition = i;
                     attributesStartPosition = i + 1;
                 }
-                if ((markup[i] == '>'))
+                if ((tag[i] == '>'))
                 {
                     if(tagNameEndPosition == -1)
                         tagNameEndPosition = i;
@@ -612,8 +613,8 @@ namespace QuasiXml
 
             return new Tag() 
                 { 
-                    Name = markup.Substring(tagNameStartPosition, tagNameEndPosition - tagNameStartPosition),
-                    Attributes = attributesStartPosition != -1 ? ExtractAttributes(markup.Substring(attributesStartPosition, attributesEndPosition - attributesStartPosition)) : new Dictionary<string, string>()
+                    Name = tag.Substring(tagNameStartPosition, tagNameEndPosition - tagNameStartPosition),
+                    Attributes = attributesStartPosition != -1 ? ExtractAttributes(tag.Substring(attributesStartPosition, attributesEndPosition - attributesStartPosition)) : new Dictionary<string, string>()
                 };
         }
 
