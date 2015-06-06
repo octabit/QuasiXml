@@ -657,12 +657,12 @@ namespace QuasiXml
             {
                 if (ParseSettings.NormalizeAttributeValueWhitespaces)
                 {
-                    string currentAttributeValue = attributeComponents[i + 1].Trim();
+                    string currentAttributeValue = attributeComponents[i + 1];
                     currentAttributeValue = Regex.Replace(currentAttributeValue, @"\s+", " ", RegexOptions.Compiled);
-                    result.Add(attributeComponents[i].Trim().Trim('=').Trim(), currentAttributeValue);
+                    result.Add(attributeComponents[i].Trim(new char[] { ' ', '\t', '=' }), currentAttributeValue);
                 }
                 else
-                    result.Add(attributeComponents[i].Trim().Trim('=').Trim(), attributeComponents[i + 1].Trim());
+                    result.Add(attributeComponents[i].Trim(new char[]{' ','\t', '='}), attributeComponents[i + 1].Trim());
             }
 
             return result;
