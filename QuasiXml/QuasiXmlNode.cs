@@ -232,7 +232,6 @@ namespace QuasiXml
             int lastSearchTagStartPosition = 0;
             int searchTagStartPosition = 0;
             int tagEndPosition = -1;
-
             int commentBeginPosition = -1;
             int cdataBeginPosition = -1;
 
@@ -248,7 +247,6 @@ namespace QuasiXml
                 {
                     commentBeginPosition = markup.IndexOf(CommentStart, tagBeginPosition, StringComparison.Ordinal);
                     cdataBeginPosition = markup.IndexOf(CdataStart, tagBeginPosition, StringComparison.Ordinal);
-
                     tagIsCommentStart = tagBeginPosition == commentBeginPosition;
                     tagIsCdataStart = tagBeginPosition == cdataBeginPosition;
                 }
@@ -270,7 +268,8 @@ namespace QuasiXml
                     {
                         //Check if next tags start token is found before this tags end token
                         int nextTagStartTokenIndex = markup.IndexOf('<', tagBeginPosition + 1);
-                        if ((nextTagStartTokenIndex < markup.IndexOf('>', tagBeginPosition)) && tagEndPosition != -1 && nextTagStartTokenIndex != -1)
+                        int nextEndTagTokenIndex = markup.IndexOf('>', tagBeginPosition);
+                        if ((nextTagStartTokenIndex < nextEndTagTokenIndex) && tagEndPosition != -1 && nextTagStartTokenIndex != -1)
                         {
                             if (ParseSettings.AbortOnError)
                                 throw new QuasiXmlException("Missing tag end token.", GetLineNumber(markup, tagBeginPosition));
@@ -279,7 +278,7 @@ namespace QuasiXml
                             continue;
                         }
 
-                        tagEndPosition = markup.IndexOf('>', tagBeginPosition); //TODO: Really seek within attribute values? Is '>' allowed in attribute values?
+                        tagEndPosition = nextEndTagTokenIndex; //TODO: Really seek within attribute values? Is '>' allowed in attribute values?
 
                         if (tagEndPosition == -1) //Should only occur if the last tag in the markup is missing an end token
                         {
