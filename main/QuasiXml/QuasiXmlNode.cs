@@ -27,7 +27,6 @@ using System.Collections.Specialized;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 
 namespace QuasiXml
 {
@@ -39,6 +38,12 @@ namespace QuasiXml
         private const string CdataEnd = "]]>";
         private const string CommentStart = "<!--";
         private const string CommentEnd = "-->";
+
+        private class Tag
+        {
+            public string Name;
+            public Dictionary<string, string> Attributes;
+        }
 
         /// <summary>
         /// Gets or sets the name of this node.
@@ -179,14 +184,14 @@ namespace QuasiXml
         {
             get
             {
-                if (this.Children.FirstOrDefault(n => n.Name == name) != null)
-                    return this.Children.Single(c => c.Name == name);
+                if (this.Children.FirstOrDefault(n => n.Name.Equals(name, StringComparison.Ordinal)) != null)
+                    return this.Children.Single(c => c.Name.Equals(name, StringComparison.Ordinal));
 
                 return null;
             }
             set
             {
-                QuasiXmlNode node = this.Children.Single(c => c.Name == name);
+                QuasiXmlNode node = this.Children.Single(c => c.Name.Equals(name, StringComparison.Ordinal));
                 node = value;
             }
         }
@@ -226,7 +231,6 @@ namespace QuasiXml
             int lastSearchTagStartPosition = 0;
             int searchTagStartPosition = 0;
             int tagEndPosition = -1;
-
             int commentBeginPosition = -1;
             int cdataBeginPosition = -1;
 
@@ -242,7 +246,6 @@ namespace QuasiXml
                 {
                     commentBeginPosition = markup.IndexOf(CommentStart, tagBeginPosition, StringComparison.Ordinal);
                     cdataBeginPosition = markup.IndexOf(CdataStart, tagBeginPosition, StringComparison.Ordinal);
-
                     tagIsCommentStart = tagBeginPosition == commentBeginPosition;
                     tagIsCdataStart = tagBeginPosition == cdataBeginPosition;
                 }
@@ -264,7 +267,8 @@ namespace QuasiXml
                     {
                         //Check if next tags start token is found before this tags end token
                         int nextTagStartTokenIndex = markup.IndexOf('<', tagBeginPosition + 1);
-                        if ((nextTagStartTokenIndex < markup.IndexOf('>', tagBeginPosition)) && tagEndPosition != -1 && nextTagStartTokenIndex != -1)
+                        int nextEndTagTokenIndex = markup.IndexOf('>', tagBeginPosition);
+                        if ((nextTagStartTokenIndex < nextEndTagTokenIndex) && tagEndPosition != -1 && nextTagStartTokenIndex != -1)
                         {
                             if (ParseSettings.AbortOnError)
                                 throw new QuasiXmlException("Missing tag end token.", GetLineNumber(markup, tagBeginPosition));
@@ -273,7 +277,7 @@ namespace QuasiXml
                             continue;
                         }
 
-                        tagEndPosition = markup.IndexOf('>', tagBeginPosition); //TODO: Really seek within attribute values? Is '>' allowed in attribute values?
+                        tagEndPosition = nextEndTagTokenIndex; //TODO: Really seek within attribute values? Is '>' allowed in attribute values?
 
                         if (tagEndPosition == -1) //Should only occur if the last tag in the markup is missing an end token
                         {
@@ -284,9 +288,12 @@ namespace QuasiXml
                             lastSearchTagStartPosition = tagBeginPosition - 1;
                         }
 
+                        string tagString = markup.Substring(tagBeginPosition, (tagEndPosition - tagBeginPosition) + 1); //e.g. "<tag attribute='test'>"
                         bool isEndTag = markup[tagBeginPosition + 1] == '/'; //TODO: What if tag contains whitespace before  '/'
-                        bool isSelfClosingTag = markup.Substring(tagBeginPosition, (tagEndPosition - tagBeginPosition) + 1).Replace(" ", string.Empty).Contains("/>");
+                        bool isSelfClosingTag = tagString.Replace(" ", string.Empty).EndsWith("/>", StringComparison.Ordinal);
                         searchTagStartPosition = tagEndPosition + 1;
+
+                        Tag tag = ExtractTagParts(tagString);
 
                         if (isEndTag)
                         {
@@ -294,12 +301,12 @@ namespace QuasiXml
 
                             //Remove the last occurance of the current node type:
                             for (int i = openNodes.Count; i > 0; i--)
-                                if (openNodes[i - 1].Item1.Name == ExtractName(markup, tagBeginPosition + 1))
+                                if (openNodes[i - 1].Item1.Name.Equals(tag.Name, StringComparison.Ordinal))
                                     openNodes.RemoveAt(i - 1);
 
                             if (initialNumberOfOpenTags == openNodes.Count)
                                 if (ParseSettings.AbortOnError)
-                                    throw new QuasiXmlException("Missing open '" + ExtractName(markup, tagBeginPosition + 1) + "' tag to close.", GetLineNumber(markup, tagBeginPosition));
+                                    throw new QuasiXmlException("Missing open '" + tag.Name + "' tag to close.", GetLineNumber(markup, tagBeginPosition));
 
                             if (openNodes.Count > 0)
                                 currentTag = openNodes[openNodes.Count - 1].Item1; //Current tag is the last open tag
@@ -308,8 +315,6 @@ namespace QuasiXml
                             continue;
                         }
 
-                        string name = ExtractName(markup, tagBeginPosition);
-
                         if (isRoot == false)
                         {
                             currentTag.Children.Add(new QuasiXmlNode() { RenderSettings = openNodes.First().Item1.RenderSettings });
@@ -317,7 +322,7 @@ namespace QuasiXml
                         }
                         else
                         {
-                            if (name.Equals(XmlDeclaration, StringComparison.OrdinalIgnoreCase))
+                            if (tag.Name.Equals(XmlDeclaration, StringComparison.OrdinalIgnoreCase))
                                 continue;
 
                             currentTag = this;
@@ -327,8 +332,8 @@ namespace QuasiXml
                         if (openNodes.Count > 0)
                             currentTag.Parent = openNodes.Last().Item1;
                         currentTag.NodeType = QuasiXmlNodeType.Element;
-                        currentTag.Name = name;
-                        currentTag.Attributes = ExtractAttributes(markup, tagBeginPosition, tagEndPosition);
+                        currentTag.Name = tag.Name;
+                        currentTag.Attributes = tag.Attributes;
                         currentTag.IsSelfClosing = isSelfClosingTag;
 
                         if (isSelfClosingTag == false)
@@ -474,7 +479,7 @@ namespace QuasiXml
                             markupBuilder.Append('>');
                             if (!(node.Children.FirstOrDefault(n => n.NodeType == QuasiXmlNodeType.Text) != null
                                 && (node.Children.First().Value == null
-                                || node.Children.First().Value.StartsWith(lineEnd))))
+                                || node.Children.First().Value.StartsWith(lineEnd, StringComparison.Ordinal))))
                             {
                                 markupBuilder.Append(lineEnd);
                             }
@@ -504,7 +509,7 @@ namespace QuasiXml
                     case QuasiXmlNodeType.Text:
                         if(!_isLineIndented)
                         {
-                            if (node.Value == null || !node.Value.StartsWith(lineEnd + currentLevelIndent))
+                            if (node.Value == null || !node.Value.StartsWith(lineEnd + currentLevelIndent, StringComparison.Ordinal))
                                 markupBuilder.Append(currentLevelIndent);
                             else
                                 if (node.RenderSettings.AutoIndentMarkup && node.Value != null)
@@ -572,70 +577,78 @@ namespace QuasiXml
                     newNode.Parent = this;
         }
 
-        private string ExtractName(string markup, int startTagBeginPosition)
+        private Tag ExtractTagParts(string tag)
         {
-            //Tag name start is first non-whitespace char after startTagBeginPosition + 1's index
             int tagNameStartPosition = -1;
             int tagNameEndPosition = -1;
+            int attributesStartPosition = -1;
+            int attributesEndPosition = -1;
 
-            for (int i = startTagBeginPosition + 1; i < markup.Length; i++)
-                if (!char.IsWhiteSpace(markup[i]))
+            //Tag name start is first non-whitespace char after startTagBeginPosition + 1's index
+            for (int i = 1; i < tag.Length; i++)
+                if (!char.IsWhiteSpace(tag[i]) && tag[i] != '/')
                 {
                     tagNameStartPosition = i;
                     break;
                 }
 
-            for (int i = tagNameStartPosition; i < markup.Length; i++)
-                if (markup[i] == '>' || char.IsWhiteSpace(markup[i]))
+            for (int i = tagNameStartPosition; i < tag.Length; i++)
+            {
+                if (char.IsWhiteSpace(tag[i]) && tagNameEndPosition == -1)
                 {
                     tagNameEndPosition = i;
+                    attributesStartPosition = i + 1;
+                }
+                if ((tag[i] == '>'))
+                {
+                    if(tagNameEndPosition == -1)
+                        tagNameEndPosition = i;
+
+                    attributesEndPosition = i;
                     break;
                 }
+            }
 
-            return markup.Substring(tagNameStartPosition, tagNameEndPosition - tagNameStartPosition);
+            return new Tag() 
+                { 
+                    Name = tag.Substring(tagNameStartPosition, tagNameEndPosition - tagNameStartPosition),
+                    Attributes = attributesStartPosition != -1 ? ExtractAttributes(tag.Substring(attributesStartPosition, attributesEndPosition - attributesStartPosition)) : new Dictionary<string, string>()
+                };
         }
 
-        private Dictionary<string, string> ExtractAttributes(string markup, int startTagBeginPosition, int startTagEndPosition)
+        private Dictionary<string, string> ExtractAttributes(string attributes)
         {
             var result = new Dictionary<string, string>();
-            string startTagContent = markup.Substring(startTagBeginPosition, (startTagEndPosition - startTagBeginPosition) + 1);
-            startTagContent = startTagContent.Trim().TrimStart('<').TrimEnd('>').TrimEnd('/').Trim();
-
-            if (startTagContent.IndexOf(' ') == -1)
-                return result;
-
-            startTagContent = startTagContent.Substring(startTagContent.Split(new char[] { ' ' })[0].Length).Trim(); //Get rid of the tag name
-
             var attributeComponents = new List<string>();
 
             while (true)
             {
-                int equalsCharPosition = startTagContent.IndexOf('=');
+                int equalsCharPosition = attributes.IndexOf('=');
                 if (equalsCharPosition == -1)
                     break;
 
-                attributeComponents.Add(startTagContent.Substring(0, equalsCharPosition).TrimEnd()); //Add key
+                attributeComponents.Add(attributes.Substring(0, equalsCharPosition).TrimEnd()); //Add key
 
-                startTagContent = startTagContent.Substring(equalsCharPosition + 1, (startTagContent.Length - equalsCharPosition) - 1).TrimStart(); //Cut 
+                attributes = attributes.Substring(equalsCharPosition + 1, (attributes.Length - equalsCharPosition) - 1).TrimStart(); //Cut 
 
-                char valueWrapper = startTagContent[0];
+                char valueWrapper = attributes[0];
                 if (valueWrapper != '"' && valueWrapper != '\'')
                     break;
 
-                int valueEndPostition = startTagContent.IndexOf(valueWrapper, 1);
+                int valueEndPostition = attributes.IndexOf(valueWrapper, 1);
                 if (valueEndPostition == -1)
                     break;
 
-                attributeComponents.Add(startTagContent.Substring(1, valueEndPostition - 1)); //Add value
+                attributeComponents.Add(attributes.Substring(1, valueEndPostition - 1)); //Add value
 
-                startTagContent = startTagContent.Substring(valueEndPostition + 1, startTagContent.Length - (valueEndPostition + 1)).TrimStart(); //Cut
+                attributes = attributes.Substring(valueEndPostition + 1, attributes.Length - (valueEndPostition + 1)).TrimStart(); //Cut
             }
 
             if (attributeComponents.Count % 2 != 0)
-            { 
+            {
                 if (ParseSettings.AbortOnError)
                     return result;
-                
+
                 attributeComponents.RemoveAt(attributeComponents.Count - 1);
             }
 
@@ -643,12 +656,12 @@ namespace QuasiXml
             {
                 if (ParseSettings.NormalizeAttributeValueWhitespaces)
                 {
-                    string currentAttributeValue = attributeComponents[i + 1].Trim();
+                    string currentAttributeValue = attributeComponents[i + 1];
                     currentAttributeValue = Regex.Replace(currentAttributeValue, @"\s+", " ", RegexOptions.Compiled);
-                    result.Add(attributeComponents[i].Trim().Trim('=').Trim(), currentAttributeValue);
+                    result.Add(attributeComponents[i].Trim(new char[] { ' ', '\t', '=' }), currentAttributeValue.Trim());
                 }
                 else
-                    result.Add(attributeComponents[i].Trim().Trim('=').Trim(), attributeComponents[i + 1].Trim());
+                    result.Add(attributeComponents[i].Trim(new char[]{' ','\t', '='}), attributeComponents[i + 1]);
             }
 
             return result;
