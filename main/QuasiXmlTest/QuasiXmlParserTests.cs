@@ -86,7 +86,7 @@ namespace QuasiXmlTest
             root.OuterMarkup = markup;
 
             //Assert
-            Assert.AreEqual("attribute3=", root["element"].Attributes["attribute2"]);
+            Assert.AreEqual(" attribute3=", root["element"].Attributes["attribute2"]);
         }
 
         [TestMethod]
