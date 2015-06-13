@@ -59,7 +59,7 @@ namespace QuasiXmlTest
             //Arrange
             string markup =
             @"<root>
-                <element attribute=""abc123='"" attribute2 ='abc123=""' attribute3= ""abc{0} 123="" />
+                <element attribute=""abc123='"" attribute2 ='abc123=""' attribute3= ""abc{0} 123="" attribute4="" test ""/>
             </root>";
 
             markup = string.Format(markup, "\t");
@@ -70,11 +70,13 @@ namespace QuasiXmlTest
             Assert.AreEqual("abc123='", root["element"].Attributes["attribute"]);
             Assert.AreEqual("abc123=\"", root["element"].Attributes["attribute2"]);
             Assert.AreEqual("abc\t 123=", root["element"].Attributes["attribute3"]);
+            Assert.AreEqual(" test ", root["element"].Attributes["attribute4"]);
 
             root = new QuasiXmlNode( new QuasiXmlParseSettings() { NormalizeAttributeValueWhitespaces = true });
             root.OuterMarkup = markup;
 
             Assert.AreEqual("abc 123=", root["element"].Attributes["attribute3"]);
+            Assert.AreEqual("test", root["element"].Attributes["attribute4"]);
 
             markup =
             @"<root>
@@ -82,11 +84,12 @@ namespace QuasiXmlTest
             </root>";
 
             //Act
-            root = new QuasiXmlNode(new QuasiXmlParseSettings() { AbortOnError = false });
+            root = new QuasiXmlNode(new QuasiXmlParseSettings() { NormalizeAttributeValueWhitespaces = false });
             root.OuterMarkup = markup;
 
             //Assert
-            Assert.AreEqual("attribute3=", root["element"].Attributes["attribute2"]);
+            Assert.AreEqual(" attribute3=", root["element"].Attributes["attribute2"]);
+            Assert.AreEqual(false, root["element"].Attributes.Any(a => a.Key == "attribute3"));
         }
 
         [TestMethod]
@@ -367,6 +370,23 @@ namespace QuasiXmlTest
             //Arrange
             string markup =
             @"<?xml version=""1.0"" encoding=""utf-8""?><root><one>text</one></root>";
+
+            //Act
+            QuasiXmlNode root = new QuasiXmlNode();
+            root.ParseSettings.AutoCloseOpenTags = true;
+            root.OuterMarkup = markup;
+
+            //Assert
+            Assert.IsInstanceOfType(root, typeof(QuasiXmlNode));
+            Assert.AreEqual("root", root.Name);
+        }
+
+        [TestMethod]
+        public void TestCanHandleDocumentTypeDeclaration()
+        {
+            //Arrange
+            string markup =
+            @"<!DOCTYPE test SYSTEM ""test.dtd""><root><one>text</one></root>";
 
             //Act
             QuasiXmlNode root = new QuasiXmlNode();
