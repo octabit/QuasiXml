@@ -34,6 +34,7 @@ namespace QuasiXml
     {
         private bool _isLineIndented = false;
         private const string XmlDeclaration = "?xml";
+        private const string DocumentTypeDeclaration = "!DOCTYPE";
         private const string CdataStart = "<![CDATA[";
         private const string CdataEnd = "]]>";
         private const string CommentStart = "<!--";
@@ -184,14 +185,11 @@ namespace QuasiXml
         {
             get
             {
-                if (this.Children.FirstOrDefault(n => n.Name.Equals(name, StringComparison.Ordinal)) != null)
-                    return this.Children.Single(c => c.Name.Equals(name, StringComparison.Ordinal));
-
-                return null;
+                return this.Children.FirstOrDefault(n => name == n.Name);
             }
             set
             {
-                QuasiXmlNode node = this.Children.Single(c => c.Name.Equals(name, StringComparison.Ordinal));
+                QuasiXmlNode node = this.Children.Single(c => c.Name == name);
                 node = value;
             }
         }
@@ -248,6 +246,14 @@ namespace QuasiXml
                     cdataBeginPosition = markup.IndexOf(CdataStart, tagBeginPosition, StringComparison.Ordinal);
                     tagIsCommentStart = tagBeginPosition == commentBeginPosition;
                     tagIsCdataStart = tagBeginPosition == cdataBeginPosition;
+
+                    //Skip eventual document type declaration
+                    if (DocumentTypeDeclaration.Equals(markup.Substring(tagBeginPosition + 1, DocumentTypeDeclaration.Length), StringComparison.OrdinalIgnoreCase))
+                    {
+                        searchTagStartPosition++;
+                        tagEndPosition = markup.IndexOf('>', tagBeginPosition + 1 + DocumentTypeDeclaration.Length);
+                        continue;
+                    }
                 }
 
                 try
@@ -314,6 +320,12 @@ namespace QuasiXml
                                 currentTag = null;
                             continue;
                         }
+                        else
+                        {
+                            //Skip eventual XML declaration
+                            if (tag.Name.Equals(XmlDeclaration, StringComparison.OrdinalIgnoreCase))
+                                continue;
+                        }
 
                         if (isRoot == false)
                         {
@@ -322,9 +334,6 @@ namespace QuasiXml
                         }
                         else
                         {
-                            if (tag.Name.Equals(XmlDeclaration, StringComparison.OrdinalIgnoreCase))
-                                continue;
-
                             currentTag = this;
                             isRoot = false;
                         }
