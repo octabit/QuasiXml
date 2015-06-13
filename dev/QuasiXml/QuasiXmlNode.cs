@@ -184,10 +184,7 @@ namespace QuasiXml
         {
             get
             {
-                if (this.Children.FirstOrDefault(n => n.Name.Equals(name, StringComparison.Ordinal)) != null)
-                    return this.Children.Single(c => c.Name.Equals(name, StringComparison.Ordinal));
-
-                return null;
+                return this.Children.FirstOrDefault(c => c.Name.Equals(name, StringComparison.Ordinal));
             }
             set
             {
